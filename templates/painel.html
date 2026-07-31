@@ -130,6 +130,7 @@ a:hover{text-decoration:underline}
   <span class="grow"></span>
   <span id="jobTx" class="jobtx"></span>
   <button class="mini" onclick="carregar()">Atualizar</button>
+  <button class="pri" id="btnGit" onclick="enviarGithub()">Enviar pro GitHub</button>
 </div></header>
 
 <main>
@@ -155,6 +156,8 @@ a:hover{text-decoration:underline}
     <button id="tb-prod" class="on" onclick="aba('prod')">Catálogo</button>
     <button id="tb-cup" onclick="aba('cup')">Cupons</button>
     <button id="tb-post" onclick="aba('post')">Publicações</button>
+    <button id="tb-cat" onclick="aba('cat')">Categorias</button>
+    <button id="tb-set" onclick="aba('set')">Ajustes</button>
   </nav>
 
   <div id="ab-prod">
@@ -183,6 +186,27 @@ a:hover{text-decoration:underline}
     <table><thead><tr><th>Quando</th><th>Produto</th><th>Situação</th>
       <th class="r">Preço</th></tr></thead><tbody id="tbPost"></tbody></table>
   </div>
+
+  <div id="ab-cat" class="hide">
+    <div class="form">
+      <input id="ncNome" placeholder="Nova categoria" size="16">
+      <input id="ncKw" placeholder="palavras-chave p/ auto-classificar (opcional): teclado, keyboard" size="42">
+      <button class="pri" onclick="criarCat()">Criar categoria</button>
+    </div>
+    <table><thead><tr><th>Categoria</th><th class="r">Produtos</th><th></th></tr></thead>
+      <tbody id="tbCat"></tbody></table>
+  </div>
+
+  <div id="ab-set" class="hide">
+    <div style="max-width:560px">
+      <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eceef2">
+        <span><b>Frequência de publicação</b></span>
+        <span>a cada <input id="cfCron" type="number" min="1" max="23" class="freq mono" style="width:58px"> horas</span></label>
+      <div id="cfCampos"></div>
+      <button class="pri" onclick="salvarConfig()" style="margin-top:14px">Salvar ajustes</button>
+      <p class="sub" style="margin-top:10px">Depois de salvar, clique em <b>Enviar pro GitHub</b> (no topo) para a automação usar os novos valores.</p>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -191,9 +215,10 @@ const brl=v=>v==null?'—':'R$ '+Number(v).toFixed(2).replace('.',',');
 const esc=s=>(s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 const cap=s=>(s||'').replace(/_/g,' ').toLowerCase().replace(/^./,c=>c.toUpperCase());
 
-function aba(n){['prod','cup','post'].forEach(x=>{
+function aba(n){['prod','cup','post','cat','set'].forEach(x=>{
   document.getElementById('ab-'+x).classList.toggle('hide',x!==n);
-  document.getElementById('tb-'+x).classList.toggle('on',x===n);});}
+  document.getElementById('tb-'+x).classList.toggle('on',x===n);});
+  if(n==='cat')carregarCat(); if(n==='set')carregarConfig();}
 
 async function carregar(){
   const D0=await fetch('/api/status'); D=await D0.json();
@@ -217,7 +242,7 @@ async function carregar(){
       <td><select class="plain" onchange="setCat('${p.id}',this.value)">
         ${opts.replace('<option>'+p.categoria+'</option>','<option selected>'+p.categoria+'</option>')}
       </select></td>
-      <td><span class="pill p-${p.tier}">${cap(p.tier)}</span>
+      <td>${p.pausado?'<span class="bad b-warn">pausado</span>':`<span class="pill p-${p.tier}">${cap(p.tier)}</span>`}
         ${p.urgente?'<div class="urg">Queda detectada</div>':''}</td>
       <td class="r mono">${brl(p.preco)}</td>
       <td class="r mono">${p.desconto?p.desconto+'%':'—'}</td>
@@ -229,9 +254,11 @@ async function carregar(){
         p.link_sit==='ok'?'b-ok':p.link_sit==='aviso'?'b-warn':'b-dan'}">${p.link_tipo}</a>`
         :'<span class="bad b-dan">ausente</span>'}</td>
       <td><div class="acts">
-        <button class="mini" onclick="prodAcao('${p.id}','postar')">Publicar</button>
-        <button class="mini" onclick="prodAcao('${p.id}','pausar')">Pausar</button>
-        <button class="mini dan" onclick="if(confirm('Remover ${p.id}?'))prodAcao('${p.id}','apagar')">Remover</button>
+        ${p.pausado
+          ? `<button class="mini" onclick="prodAcao('${p.id}','ativar')">Reativar</button>`
+          : `<button class="mini" onclick="prodAcao('${p.id}','postar')">Publicar</button>
+             <button class="mini" onclick="prodAcao('${p.id}','pausar')" title="Some do site e do canal, de forma permanente">Pausar</button>`}
+        <button class="mini dan" onclick="if(confirm('Apagar ${p.id}? Some do painel. Se ainda estiver na sua lista do ML, volta na próxima sincronização — use Pausar para remover de vez.'))prodAcao('${p.id}','apagar')">Apagar</button>
       </div></td>
     </tr>`).join('')||'<tr><td colspan="9" class="vazio">Catálogo vazio — sincronize sua lista para começar.</td></tr>';
 
@@ -294,6 +321,57 @@ async function addCupom(){
 async function delCupom(c){
   if(!confirm('Remover o cupom '+c+'?'))return;
   await fetch('/api/cupom/'+c,{method:'DELETE'});carregar();
+}
+
+async function carregarCat(){
+  const cats=await(await fetch('/api/categorias')).json();
+  document.getElementById('tbCat').innerHTML=cats.map(c=>`
+    <tr><td class="tit">${esc(c.nome)}</td><td class="r mono">${c.n}</td>
+    <td class="r"><div class="acts">
+      <button class="mini" onclick="renomearCat('${esc(c.nome)}')">Renomear</button>
+      <button class="mini dan" onclick="apagarCat('${esc(c.nome)}')">Apagar</button>
+    </div></td></tr>`).join('')||'<tr><td colspan="3" class="vazio">Nenhuma categoria ainda.</td></tr>';
+}
+async function criarCat(){
+  const nome=document.getElementById('ncNome').value.trim();
+  if(!nome)return alert('Digite o nome da categoria.');
+  await fetch('/api/categoria/criar',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nome,palavras:document.getElementById('ncKw').value})});
+  document.getElementById('ncNome').value='';document.getElementById('ncKw').value='';
+  carregarCat();carregar();
+}
+async function renomearCat(nome){
+  const novo=prompt('Novo nome para "'+nome+'":',nome);
+  if(!novo||novo===nome)return;
+  await fetch('/api/categoria/renomear',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({antigo:nome,novo})});carregarCat();carregar();
+}
+async function apagarCat(nome){
+  const destino=prompt('Apagar a categoria "'+nome+'". Mover os produtos dela para qual categoria?','Outros');
+  if(destino===null)return;
+  await fetch('/api/categoria/apagar',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nome,destino:destino||'Outros'})});carregarCat();carregar();
+}
+async function carregarConfig(){
+  const c=await(await fetch('/api/config')).json();
+  document.getElementById('cfCron').value=c.cron_horas||3;
+  document.getElementById('cfCampos').innerHTML=c.campos.map(f=>`
+    <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eceef2">
+    <span>${f.label}</span>
+    <input id="cf_${f.k}" class="freq mono" value="${esc(f.valor)}" style="width:120px"></label>`).join('');
+}
+async function salvarConfig(){
+  const c=await(await fetch('/api/config')).json();
+  const valores={};c.campos.forEach(f=>{valores[f.k]=document.getElementById('cf_'+f.k).value;});
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({valores,cron_horas:document.getElementById('cfCron').value})});
+  alert('Ajustes salvos localmente. Clique em "Enviar pro GitHub" para aplicar na automação.');
+}
+async function enviarGithub(){
+  const b=document.getElementById('btnGit');const t=b.textContent;b.disabled=true;b.textContent='Enviando...';
+  try{const r=await(await fetch('/api/github/push',{method:'POST'})).json();alert(r.msg||(r.ok?'Enviado!':'Falhou.'));}
+  catch(e){alert('Erro ao enviar. Use o GitHub Desktop (Commit + Push).');}
+  b.disabled=false;b.textContent=t;
 }
 carregar();setInterval(carregar,30000);
 </script>

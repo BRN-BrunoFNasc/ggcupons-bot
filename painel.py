@@ -8,6 +8,9 @@ Mostra catalogo, cupons, links, historico de posts e permite agir por botao.
 Roda so na sua maquina; nao exponha na internet.
 """
 import sys
+import re
+import json as _json
+import subprocess
 import threading
 import traceback
 from datetime import datetime, timezone
@@ -122,6 +125,17 @@ def api_status():
             "manual": i.get("cooldown_min") is not None and i.get("cooldown_min") == i.get("cooldown_min"),
         })
 
+    _cx = database._conn()
+    for pp in [dict(r) for r in _cx.execute(
+            "SELECT id,title,categoria,loja,affiliate_url,permalink FROM products WHERE active=0").fetchall()]:
+        _t, _s = _tipo_link(pp.get("affiliate_url"))
+        produtos.append({"id": pp["id"], "titulo": pp.get("title") or "", "loja": pp.get("loja") or "-",
+                         "categoria": pp.get("categoria") or "-", "tier": "PAUSADO", "preco": None,
+                         "desconto": 0, "freq": "", "liberado": False, "urgente": False,
+                         "ultimo_post": "", "link": pp.get("affiliate_url") or "", "link_tipo": _t,
+                         "link_sit": _s, "permalink": pp.get("permalink") or "", "pausado": True})
+    _cx.close()
+
     con = database._conn()
     posts = [dict(r) for r in con.execute(
         "SELECT p.product_id, p.tier, p.price, p.posted_at, pr.title "
@@ -231,6 +245,158 @@ def api_acao(nome):
 @app.get("/api/job")
 def api_job():
     return jsonify(JOB)
+
+
+
+# ---------------- CONFIG (ci.env) + FREQUENCIA (cron) ----------------
+CI_ENV = BASE / "ci.env"
+WORKFLOW = BASE / ".github" / "workflows" / "atualizar.yml"
+CATS_JSON = BASE / "categorias.json"
+
+CONFIG_CAMPOS = [
+    ("MIN_DISCOUNT_PERCENT", "Desconto mínimo para postar (%)"),
+    ("DESCONTO_FORTE_PCT", "Desconto considerado forte (%)"),
+    ("CD_MENOR_PRECO", "Descanso — menor preço (min)"),
+    ("CD_CUPOM", "Descanso — cupom (min)"),
+    ("CD_DESC_FORTE", "Descanso — desconto forte (min)"),
+    ("CD_DESC_LEVE", "Descanso — desconto leve (min)"),
+    ("CD_SEM_DESCONTO", "Descanso — sem desconto (min)"),
+    ("PAUSA_MADRUGADA", "Pausar de madrugada (sim/nao)"),
+]
+
+
+def _ler_env(path):
+    d = {}
+    if path.exists():
+        for ln in path.read_text(encoding="utf-8").splitlines():
+            s = ln.strip()
+            if not s or s.startswith("#") or "=" not in s:
+                continue
+            k, v = s.split("=", 1)
+            d[k.strip()] = v.split(" #", 1)[0].strip()
+    return d
+
+
+def _escrever_env(path, updates):
+    linhas = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+    vistos, out = set(), []
+    for ln in linhas:
+        s = ln.strip()
+        if s and not s.startswith("#") and "=" in s:
+            k = s.split("=", 1)[0].strip()
+            if k in updates:
+                out.append(f"{k}={updates[k]}")
+                vistos.add(k)
+                continue
+        out.append(ln)
+    for k, v in updates.items():
+        if k not in vistos:
+            out.append(f"{k}={v}")
+    path.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def _cron_horas():
+    if not WORKFLOW.exists():
+        return None
+    m = re.search(r"cron:\s*'0 \*/(\d+) \* \* \*'", WORKFLOW.read_text(encoding="utf-8"))
+    return int(m.group(1)) if m else None
+
+
+def _set_cron_horas(h):
+    h = max(1, min(23, int(h)))
+    txt = WORKFLOW.read_text(encoding="utf-8")
+    txt = re.sub(r"- cron:\s*'0 \*/\d+ \* \* \*'[^\n]*",
+                 f"- cron: '0 */{h} * * *'      # a cada {h} horas (UTC)", txt)
+    WORKFLOW.write_text(txt, encoding="utf-8")
+
+
+@app.get("/api/config")
+def api_config_get():
+    env = _ler_env(CI_ENV)
+    return jsonify({
+        "campos": [{"k": k, "label": lb, "valor": env.get(k, "")} for k, lb in CONFIG_CAMPOS],
+        "cron_horas": _cron_horas(),
+    })
+
+
+@app.post("/api/config")
+def api_config_set():
+    d = request.get_json(force=True)
+    vals = d.get("valores", {}) or {}
+    ups = {k: str(vals[k]) for k, _ in CONFIG_CAMPOS if k in vals and str(vals[k]).strip() != ""}
+    if ups:
+        _escrever_env(CI_ENV, ups)
+        if (BASE / ".env").exists():
+            _escrever_env(BASE / ".env", ups)
+    if d.get("cron_horas"):
+        _set_cron_horas(d["cron_horas"])
+    return jsonify({"ok": True})
+
+
+# ---------------- CATEGORIAS ----------------
+@app.get("/api/categorias")
+def api_cats_get():
+    con = database._conn()
+    rows = con.execute("SELECT COALESCE(categoria,'Outros') c, COUNT(*) n "
+                       "FROM products GROUP BY c ORDER BY n DESC").fetchall()
+    con.close()
+    return jsonify([{"nome": r["c"], "n": r["n"]} for r in rows])
+
+
+@app.post("/api/categoria/<acao>")
+def api_categoria(acao):
+    d = request.get_json(force=True)
+    con = database._conn()
+    if acao == "renomear":
+        con.execute("UPDATE products SET categoria=? WHERE categoria=?", (d["novo"], d["antigo"]))
+        con.commit()
+        con.close()
+        if CATS_JSON.exists():
+            cats = _json.loads(CATS_JSON.read_text(encoding="utf-8"))
+            for c in cats:
+                if c.get("nome") == d["antigo"]:
+                    c["nome"] = d["novo"]
+            CATS_JSON.write_text(_json.dumps(cats, ensure_ascii=False, indent=2), encoding="utf-8")
+        return jsonify({"ok": True})
+    if acao == "apagar":
+        destino = d.get("destino") or "Outros"
+        con.execute("UPDATE products SET categoria=? WHERE categoria=?", (destino, d["nome"]))
+        con.commit()
+        con.close()
+        return jsonify({"ok": True})
+    con.close()
+    if acao == "criar":
+        cats = _json.loads(CATS_JSON.read_text(encoding="utf-8")) if CATS_JSON.exists() else []
+        if not any(c.get("nome") == d["nome"] for c in cats):
+            palavras = [p.strip() for p in (d.get("palavras", "") or "").split(",") if p.strip()]
+            cats.append({"nome": d["nome"], "prioridade": 50, "cota": 999,
+                         "cooldown_min": None, "palavras": palavras})
+            CATS_JSON.write_text(_json.dumps(cats, ensure_ascii=False, indent=2), encoding="utf-8")
+        return jsonify({"ok": True})
+    return jsonify({"erro": "acao desconhecida"}), 400
+
+
+# ---------------- ENVIAR PRO GITHUB ----------------
+@app.post("/api/github/push")
+def api_github_push():
+    try:
+        subprocess.run(["git", "-C", str(BASE), "add", "-A"],
+                       check=True, capture_output=True, text=True)
+        subprocess.run(["git", "-C", str(BASE), "commit", "-m", "painel: ajustes do admin"],
+                       capture_output=True, text=True)
+        p = subprocess.run(["git", "-C", str(BASE), "push"], capture_output=True, text=True)
+        if p.returncode != 0:
+            return jsonify({"ok": False,
+                            "msg": "Não consegui dar push automático. Abra o GitHub Desktop e clique em Commit + Push.",
+                            "detalhe": (p.stderr or "")[-300:]})
+        return jsonify({"ok": True, "msg": "Enviado! A automação vai usar na próxima rodada."})
+    except FileNotFoundError:
+        return jsonify({"ok": False,
+                        "msg": "Git não está instalado no PATH. Salve pelo GitHub Desktop: Commit + Push."})
+    except Exception as e:
+        return jsonify({"ok": False,
+                        "msg": "Não consegui enviar automaticamente. Use o GitHub Desktop (Commit + Push).",
+                        "detalhe": str(e)[-200:]})
 
 
 def _porta_livre(preferida=None):

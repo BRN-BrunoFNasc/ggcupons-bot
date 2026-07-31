@@ -20,7 +20,7 @@ def varrer(cadastrar_novos=True, verbose=True):
     """
     database.init_db()
     if getattr(config, "MODO_LEVE", False):
-        return _varrer_catalogo(verbose=verbose)
+        return _varrer_catalogo(cadastrar_novos=cadastrar_novos, verbose=verbose)
     try:
         brutos = descoberta.coletar()
     except Exception as e:
@@ -70,9 +70,10 @@ def varrer(cadastrar_novos=True, verbose=True):
     return quedas
 
 
-def _varrer_catalogo(verbose=True):
-    """Modo leve: le a LISTA de afiliado (1 unica pagina) e atualiza tudo."""
-    from bot import lista_ml
+def _varrer_catalogo(cadastrar_novos=True, verbose=True):
+    """Modo leve: le a LISTA de afiliado (1 unica pagina), cadastra novos e atualiza tudo."""
+    from bot import lista_ml, categorias
+    from bot.link_ml import montar
     url = getattr(config, "ML_LISTA_URL", "")
     if not url:
         if verbose:
@@ -83,12 +84,33 @@ def _varrer_catalogo(verbose=True):
     if not itens:
         return []
 
-    catalogo = {p["id"]: p for p in database.get_products(only_active=True)}
+    catalogo = {p["id"]: p for p in database.get_products(only_active=False)}
     quedas = []
+    novos = 0
     for i in itens:
         pid, novo = i["id"], i["por"]
         if pid not in catalogo:
-            continue
+            if not cadastrar_novos:
+                continue
+            cat = categorias.classificar(i.get("titulo"))["nome"]
+            try:
+                link = montar(i["href"])
+            except Exception:
+                link = i.get("href")
+            database.add_product({
+                "id": pid, "title": i.get("titulo"), "permalink": i.get("href"),
+                "thumbnail": i.get("img"), "affiliate_url": link,
+                "coupon_code": None, "coupon_note": None,
+                "categoria": cat, "loja": "mercadolivre",
+            })
+            if i.get("mais"):
+                _c = database._conn()
+                _c.execute("UPDATE products SET mais_vendido=1 WHERE id=?", (pid,))
+                _c.commit(); _c.close()
+            catalogo[pid] = {"title": i.get("titulo")}
+            novos += 1
+            if verbose:
+                print(f"  NOVO  {pid}  {(i.get('titulo') or '')[:44]}")
         anterior = _ultimo_preco(pid)
         if anterior is None or abs(novo - anterior) >= 0.01:
             database.record_price(pid, novo, i.get("de"))
@@ -110,5 +132,5 @@ def _varrer_catalogo(verbose=True):
                           f"{(catalogo[pid].get('title') or '')[:40]}")
 
     if verbose:
-        print(f"[vigia] {len(itens)} produto(s) conferidos | {len(quedas)} queda(s)")
+        print(f"[vigia] {len(itens)} conferidos | {novos} novo(s) | {len(quedas)} queda(s)")
     return quedas
