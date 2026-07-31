@@ -1,0 +1,16 @@
+# ============================================================
+#  SEUS PRODUTOS  -  um por linha
+#
+#  Formato:   URL_DO_PRODUTO | LINK_DE_AFILIADO | CUPOM(opcional)
+#
+#  - URL_DO_PRODUTO  : link normal do produto (barra de endereco do ML)
+#  - LINK_DE_AFILIADO: o link que voce gerou no painel (meli.la/... ou com ref=)
+#  - CUPOM           : opcional, so se houver
+#
+#  Linhas com # sao ignoradas. Pode deixar espacos ao redor do |
+#
+#  Exemplo:
+#  https://www.mercadolivre.com.br/x/p/MLB54963150 | https://meli.la/1bct3Es
+#  https://www.mercadolivre.com.br/y/p/MLB41539969 | https://meli.la/312wYtA | GAMER10
+# ============================================================
+

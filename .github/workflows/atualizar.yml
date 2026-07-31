@@ -1,0 +1,64 @@
+name: Atualizar Garimpo Gamer
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'      # a cada 3 horas (UTC)
+  workflow_dispatch: {}          # botao "Run workflow" (manual)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar
+  cancel-in-progress: false
+
+jobs:
+  ciclo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Preparar configuracao
+        run: cp ci.env .env
+
+      - name: Rodar ciclo (precos + postagem)
+        env:
+          ML_CLIENT_ID: ${{ secrets.ML_CLIENT_ID }}
+          ML_CLIENT_SECRET: ${{ secrets.ML_CLIENT_SECRET }}
+          ML_MATT_WORD: ${{ secrets.ML_MATT_WORD }}
+          ML_MATT_TOOL: ${{ secrets.ML_MATT_TOOL }}
+          ML_LISTA_URL: ${{ secrets.ML_LISTA_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+        run: python run_ci.py --publicar
+
+      - name: Gerar site
+        run: python gerar_site.py
+
+      - name: Publicar no Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 deploy
+
+      - name: Salvar historico de precos
+        run: |
+          git config user.name "ggcupons-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A data
+          git commit -m "historico $(date -u +%FT%TZ)" || echo "sem mudancas"
+          git push || echo "nada a enviar"

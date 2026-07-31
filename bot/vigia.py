@@ -1,0 +1,114 @@
+"""Vigia de precos: varre as paginas de busca e detecta quedas quase em tempo real.
+
+Uma varredura carrega dezenas de produtos por pagina, entao da pra monitorar o
+catalogo inteiro em poucos minutos - bem mais rapido que abrir produto por produto.
+Quando detecta queda relevante, marca o produto como URGENTE e ele fura a fila.
+"""
+from bot import config, database, descoberta
+
+
+def _ultimo_preco(pid):
+    hist = database.get_price_history(pid)
+    return hist[-1]["price"] if hist else None
+
+
+def varrer(cadastrar_novos=True, verbose=True):
+    """Retorna a lista de quedas detectadas.
+
+    Se o ML bloquear (verificacao), interrompe a varredura em vez de insistir —
+    insistir sob bloqueio so agrava e prolonga a punicao.
+    """
+    database.init_db()
+    if getattr(config, "MODO_LEVE", False):
+        return _varrer_catalogo(verbose=verbose)
+    try:
+        brutos = descoberta.coletar()
+    except Exception as e:
+        if verbose:
+            print(f"[vigia] erro na coleta: {e}")
+        return []
+    if not brutos:
+        if verbose:
+            print("[vigia] nada coletado — possivel bloqueio do ML. "
+                  "Rode 'python aquecer.py' e aumente VIGIA_INTERVALO_MIN.")
+        return []
+    catalogo = {p["id"]: p for p in database.get_products(only_active=True)}
+    quedas = []
+    atualizados = 0
+
+    for i in brutos:
+        pid = i["id"]
+        if pid not in catalogo:
+            continue
+        novo = i.get("preco")
+        if not novo:
+            continue
+        anterior = _ultimo_preco(pid)
+
+        # so grava quando o preco MUDA (mantem o historico limpo)
+        if anterior is None or abs(novo - anterior) >= 0.01:
+            database.record_price(pid, novo, i.get("preco_de"))
+            atualizados += 1
+
+        if anterior and novo < anterior:
+            queda = (anterior - novo) / anterior * 100
+            if queda >= config.QUEDA_URGENTE_PCT:
+                database.marcar_urgente(pid, queda)
+                quedas.append({"id": pid, "titulo": catalogo[pid].get("title"),
+                               "de": anterior, "para": novo, "queda": round(queda, 1)})
+                if verbose:
+                    print(f"  🚨 QUEDA {queda:.0f}%  R$ {anterior} -> R$ {novo}  "
+                          f"{(catalogo[pid].get('title') or '')[:44]}")
+
+    novos = 0
+    if cadastrar_novos:
+        novos = descoberta.cadastrar(descoberta.filtrar(brutos), verbose=verbose)
+
+    if verbose:
+        print(f"[vigia] {len(brutos)} lidos | {atualizados} precos atualizados | "
+              f"{len(quedas)} queda(s) | {novos} novo(s) produto(s)")
+    return quedas
+
+
+def _varrer_catalogo(verbose=True):
+    """Modo leve: le a LISTA de afiliado (1 unica pagina) e atualiza tudo."""
+    from bot import lista_ml
+    url = getattr(config, "ML_LISTA_URL", "")
+    if not url:
+        if verbose:
+            print("[vigia] defina ML_LISTA_URL no .env (link da sua lista de afiliado)")
+        return []
+
+    itens = lista_ml.ler(url, verbose=verbose)
+    if not itens:
+        return []
+
+    catalogo = {p["id"]: p for p in database.get_products(only_active=True)}
+    quedas = []
+    for i in itens:
+        pid, novo = i["id"], i["por"]
+        if pid not in catalogo:
+            continue
+        anterior = _ultimo_preco(pid)
+        if anterior is None or abs(novo - anterior) >= 0.01:
+            database.record_price(pid, novo, i.get("de"))
+        database.atualizar_dados(pid, {
+            "parcelas": i.get("parcelas"),
+            "frete": 1 if i.get("frete") else 0,
+            "pagamento": "no PIX" if i.get("pix") else None,
+            "thumbnail": i.get("img") or None,
+            "title": i.get("titulo") or None,
+        })
+        if anterior and novo < anterior:
+            queda = (anterior - novo) / anterior * 100
+            if queda >= config.QUEDA_URGENTE_PCT:
+                database.marcar_urgente(pid, queda)
+                quedas.append({"id": pid, "de": anterior, "para": novo,
+                               "queda": round(queda, 1)})
+                if verbose:
+                    print(f"  QUEDA {queda:.0f}%  R$ {anterior} -> R$ {novo}  "
+                          f"{(catalogo[pid].get('title') or '')[:40]}")
+
+    if verbose:
+        print(f"[vigia] {len(itens)} produto(s) conferidos | {len(quedas)} queda(s)")
+    return quedas

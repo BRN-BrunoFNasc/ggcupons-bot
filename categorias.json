@@ -1,0 +1,208 @@
+[
+  {
+    "nome": "Jogos",
+    "prioridade": 100,
+    "cota": 14,
+    "cooldown_min": 360,
+    "palavras": [
+      "jogo ",
+      "jogos ",
+      "midia fisica",
+      "mídia física",
+      "game ",
+      "edition",
+      "god of war",
+      "spider-man",
+      "fifa",
+      "ea sports",
+      "call of duty",
+      "elden ring",
+      "zelda",
+      "mario",
+      "pokemon",
+      "gta",
+      "resident evil",
+      "(fisico)",
+      "(físico)",
+      "fisico)",
+      "físico)",
+      "playstation hits",
+      "midia física",
+      "standard edition",
+      "deluxe edition",
+      "goty",
+      "fisico"
+    ],
+    "bloqueio": [
+      "controle",
+      "controlador",
+      "monitor",
+      "headset",
+      "fone",
+      "capa",
+      "suporte",
+      "base ",
+      "carregador",
+      "bateria",
+      "adesivo",
+      "skin",
+      "case",
+      "volante",
+      "cadeira",
+      "mouse",
+      "teclado"
+    ],
+    "slots": 3
+  },
+  {
+    "nome": "Consoles",
+    "prioridade": 95,
+    "cota": 8,
+    "cooldown_min": 480,
+    "palavras": [
+      "console",
+      "videogame",
+      "video game",
+      "bundle",
+      "consola"
+    ],
+    "bloqueio": [
+      "monitor",
+      "controle",
+      "controlador",
+      "capa",
+      "suporte",
+      "base ",
+      "carregador",
+      "bateria",
+      "adesivo",
+      "skin",
+      "case",
+      "fone",
+      "headset",
+      "jogo "
+    ],
+    "slots": 2
+  },
+  {
+    "nome": "Gift Card",
+    "prioridade": 90,
+    "cota": 6,
+    "cooldown_min": 480,
+    "palavras": [
+      "gift card",
+      "gift-card",
+      "cartao presente",
+      "cartão presente",
+      "psn",
+      "xbox live",
+      "game pass",
+      "steam"
+    ],
+    "bloqueio": [
+      "capa",
+      "suporte",
+      "adesivo"
+    ],
+    "slots": 1
+  },
+  {
+    "nome": "Controles",
+    "prioridade": 85,
+    "cota": 8,
+    "cooldown_min": 480,
+    "palavras": [
+      "controle",
+      "dualsense",
+      "dualshock",
+      "joystick",
+      "manete",
+      "gamepad",
+      "controlador",
+      "control remoto"
+    ],
+    "bloqueio": [
+      "bateria",
+      "carregador",
+      "base ",
+      "capa",
+      "suporte",
+      "grip",
+      "adesivo",
+      "skin",
+      "case",
+      "monitor",
+      "fone",
+      "headset"
+    ],
+    "slots": 2
+  },
+  {
+    "nome": "Acessorios Gamer",
+    "prioridade": 60,
+    "cota": 6,
+    "cooldown_min": 720,
+    "palavras": [
+      "headset",
+      "teclado mecanico",
+      "teclado mecânico",
+      "mouse gamer",
+      "mousepad",
+      "cadeira gamer",
+      "volante",
+      "carregador de controle",
+      "bateria",
+      "carregador",
+      "base de carregamento",
+      "dock",
+      "suporte para controle",
+      "grip",
+      "memory card",
+      "hd externo",
+      "carregamento",
+      "ventilador",
+      "estacao"
+    ],
+    "bloqueio": [
+      "monitor"
+    ],
+    "slots": 2
+  },
+  {
+    "nome": "Fones",
+    "prioridade": 45,
+    "cota": 4,
+    "cooldown_min": 1440,
+    "palavras": [
+      "fone de ouvido",
+      "fones de ouvido",
+      "earbud",
+      "airdots"
+    ],
+    "bloqueio": [
+      "monitor",
+      "controle"
+    ],
+    "slots": 1
+  },
+  {
+    "nome": "Monitores",
+    "prioridade": 30,
+    "cota": 5,
+    "cooldown_min": 1440,
+    "palavras": [
+      "monitor"
+    ],
+    "bloqueio": [],
+    "slots": 1
+  },
+  {
+    "nome": "Outros",
+    "prioridade": 10,
+    "cota": 3,
+    "cooldown_min": 2880,
+    "palavras": [],
+    "bloqueio": [],
+    "slots": 1
+  }
+]
