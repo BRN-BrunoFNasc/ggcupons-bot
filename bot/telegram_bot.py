@@ -22,7 +22,8 @@ def send_message(text, chat_id=None, disable_preview=False):
         },
         timeout=20,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise requests.HTTPError(f"Telegram {resp.status_code}: {resp.text[:500]}")
     return resp.json()
 
 
@@ -38,7 +39,8 @@ def send_photo(photo_url, caption, chat_id=None):
         },
         timeout=20,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise requests.HTTPError(f"Telegram {resp.status_code}: {resp.text[:500]}")
     return resp.json()
 
 
@@ -63,5 +65,6 @@ def send_photo_file(path, caption, chat_id=None):
             files={"photo": f},
             timeout=60,
         )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise requests.HTTPError(f"Telegram {resp.status_code}: {resp.text[:500]}")
     return resp.json()

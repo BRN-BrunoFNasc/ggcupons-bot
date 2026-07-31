@@ -104,7 +104,11 @@ def caption(info, tier=None):
             nota = f" ({escape(info['cupom_nota'])})" if info.get("cupom_nota") else ""
             L.append(f"🎟️ CUPOM: <code>{escape(info['cupom'])}</code>{nota}")
     L.append("")
-    L.append(f'🛒 <a href="{escape(info["link"] or "")}">👉 PEGAR OFERTA</a>')
+    _lk = (info.get("link") or "").strip()
+    if _lk:
+        L.append(f'🛒 <a href="{escape(_lk)}">👉 PEGAR OFERTA</a>')
+    else:
+        L.append("🛒 <b>👉 PEGAR OFERTA</b>")
     L.append("")
     destino = (getattr(config, "LINK_BIO", "") or getattr(config, "CHANNEL_INVITE", ""))
     marca = escape(config.BRAND_NAME.title())
