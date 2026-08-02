@@ -9,8 +9,9 @@
     "Monitores": "monitores",
     "Outros": "outros",
     "cat_9": "processador",
-    "Peças de Computador": "processador"
+    "Peças de Computador": "processador",
+    "cat_10": "cabos"
   },
   "_nota": "Gerado pelo painel web. Cores da marca ficam no ci.env.",
-  "_updated": "02/08/2026, 15:14:48"
+  "_updated": "02/08/2026, 18:34:55"
 }
