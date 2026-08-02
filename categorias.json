@@ -210,6 +210,20 @@
     "slots": 1
   },
   {
+    "nome": "Peças de Computador",
+    "palavras": [
+      "placa mãe",
+      "processador",
+      "memoria ram",
+      "cooler"
+    ],
+    "bloqueio": [],
+    "prioridade": 50,
+    "cota": 6,
+    "cooldown_min": 480,
+    "slots": 3
+  },
+  {
     "nome": "Outros",
     "prioridade": 10,
     "cota": 3,
