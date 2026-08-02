@@ -7,7 +7,10 @@
     "Acessorios Gamer": "mouse",
     "Fones": "fones",
     "Monitores": "monitores",
-    "Outros": "outros"
+    "Outros": "outros",
+    "cat_9": "processador",
+    "Peças de Computador": "processador"
   },
-  "_nota": "Gerado pelo painel web. As cores da marca ficam no ci.env (COR_BARRA, COR_RODAPE, COR_PRECO, COR_LINHA)."
+  "_nota": "Gerado pelo painel web. Cores da marca ficam no ci.env.",
+  "_updated": "02/08/2026, 15:14:48"
 }
