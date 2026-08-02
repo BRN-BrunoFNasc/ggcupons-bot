@@ -80,6 +80,13 @@ PRIORIDADES = {
     "DESCONTO_LEVE": 50, "SEM_DESCONTO": 20,
 }
 
+# ===== Seleção do post (modelo "melhor oferta primeiro") =====
+# A cada rodada posta a MELHOR oferta disponível (maior desconto / queda /
+# menor preço histórico / mais procurado). Anti-repetição: nao repostar o
+# MESMO produto dentro desse intervalo (minutos). Se todos ja foram postados
+# dentro dele, posta o que faz mais tempo (garante que sempre sai algo).
+ANTIREPEAT_MIN = int(_get("ANTIREPEAT_MIN", "360") or 360)
+
 # ===== Parametros de afiliado do Mercado Livre =====
 # Vistos na URL final do seu link de afiliado (matt_word / matt_tool)
 ML_MATT_WORD = _get("ML_MATT_WORD", "")

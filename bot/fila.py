@@ -100,43 +100,69 @@ def sequencia_rodizio():
     return ordem or ["Outros"]
 
 
+def _minutos_desde_post(product):
+    m = _minutos_desde(product.get("last_posted_at"))
+    return 10 ** 9 if m is None else m
+
+
+def pontuacao(x):
+    """Pontua a oferta (maior = posta primeiro). Modelo dos sites de oferta:
+    maior desconto, menor preço histórico, cupom, e itens mais procurados/do momento."""
+    s = 0.0
+    # 1) maior desconto (peso principal)
+    s += (x.get("desconto") or 0) * 3.0
+    # 2) menor preço histórico (selo de credibilidade -> forte destaque)
+    summ = x.get("summary") or {}
+    if summ.get("enough_history"):
+        janela = summ.get("is_lowest_window", 0) or 0
+        if janela >= 90:
+            s += 300
+        elif janela >= 30:
+            s += 220
+        elif janela >= 7:
+            s += 120
+    # 3) cupom disponível
+    if x.get("tier") == "CUPOM":
+        s += 70
+    # 4) mais procurados / do momento
+    s += (x.get("trend_score") or 0) * 1.5
+    if x.get("mais_vendido"):
+        s += 50
+    # leve empurrão pra quem faz mais tempo que nao aparece (variedade)
+    s += min(_minutos_desde_post(x) / 60.0, 24) * 0.5
+    return s
+
+
 def proximo(db_path=None):
-    """1) queda de preco fura a fila. 2) senao, rodizio entre categorias."""
+    """Sempre posta a MELHOR oferta disponível (não trava por cooldown longo).
+
+    1) Queda de preço detectada agora fura a fila.
+    2) Melhor pontuação entre os que NÃO foram postados no anti-repetição.
+    3) Se todos já saíram há pouco, posta o que faz mais tempo (garante 1 post/rodada).
+    """
     itens = listar_status(db_path)
     if not itens:
         return None
 
-    # --- 1) urgentes (queda de preco detectada agora) ---
+    # 1) urgentes (queda de preço recém-detectada)
     urgentes = [x for x in itens if x["urgente"]]
     if urgentes:
-        urgentes.sort(key=lambda x: (x["queda"], x["prioridade"]), reverse=True)
+        urgentes.sort(key=lambda x: (x["queda"], pontuacao(x)), reverse=True)
         esc = urgentes[0]
         esc["motivo"] = f"QUEDA DE {esc['queda']:.0f}%"
         return esc
 
-    # --- 2) rodizio ---
-    ordem = sequencia_rodizio()
-    try:
-        pos = int(database.estado_get("rodizio_pos", "0", db_path) or 0)
-    except Exception:
-        pos = 0
+    antirep = getattr(config, "ANTIREPEAT_MIN", 360)
+    frescos = [x for x in itens if _minutos_desde_post(x) >= antirep]
 
-    for k in range(len(ordem)):
-        cat = ordem[(pos + k) % len(ordem)]
-        cands = [x for x in itens if x["categoria"] == cat and x["liberado"]]
-        if not cands:
-            continue
-        cands.sort(key=lambda x: (x["prioridade"], x["atraso_min"]), reverse=True)
-        database.estado_set("rodizio_pos", (pos + k + 1) % len(ordem), db_path)
-        esc = cands[0]
-        esc["motivo"] = f"rodizio: {cat}"
+    if frescos:
+        frescos.sort(key=lambda x: (pontuacao(x), _minutos_desde_post(x)), reverse=True)
+        esc = frescos[0]
+        esc["motivo"] = f"melhor oferta (score {pontuacao(esc):.0f})"
         return esc
 
-    # --- 3) nada no rodizio: qualquer liberado ---
-    livres = [x for x in itens if x["liberado"]]
-    if not livres:
-        return None
-    livres.sort(key=lambda x: (x["prioridade"], x["atraso_min"]), reverse=True)
-    esc = livres[0]
-    esc["motivo"] = "fallback"
+    # todos postados dentro do anti-repetição -> posta o mais antigo (cicla o catálogo)
+    itens.sort(key=lambda x: (_minutos_desde_post(x), pontuacao(x)), reverse=True)
+    esc = itens[0]
+    esc["motivo"] = "ciclo (catálogo todo postado recentemente)"
     return esc

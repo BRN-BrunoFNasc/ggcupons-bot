@@ -1,0 +1,53 @@
+name: Postar oferta
+
+# Posta 1 oferta no Telegram usando o preco ja gravado no banco (nao acessa o ML,
+# nao gera site). Leve e rapido. A cada 30 minutos.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'    # a cada 30 min (UTC) - o GitHub pode atrasar/pular
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: postar
+  cancel-in-progress: false
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias (sem navegador)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar configuracao
+        run: cp ci.env .env
+
+      - name: Postar 1 oferta
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          ML_MATT_WORD: ${{ secrets.ML_MATT_WORD }}
+          ML_MATT_TOOL: ${{ secrets.ML_MATT_TOOL }}
+          ML_LISTA_URL: ${{ secrets.ML_LISTA_URL }}
+        run: python run_ci.py --postar
+
+      - name: Salvar estado (last_posted_at)
+        run: |
+          git config user.name "ggcupons-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A data
+          git commit -m "post $(date -u +%FT%TZ)" || echo "sem mudancas"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash origin main && git push && break || sleep 6
+          done
