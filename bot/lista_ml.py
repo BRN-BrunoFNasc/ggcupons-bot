@@ -84,25 +84,76 @@ JS_LISTA = """
 """
 
 
-def ler(url_lista, headless=True, verbose=True):
-    """Abre a lista e devolve os produtos com preco. Uma unica leitura de pagina."""
+def _rolar(page, vezes=6):
+    """Rola a pagina para carregar os cards preguicosos (lazy-load)."""
+    for _ in range(vezes):
+        page.mouse.wheel(0, 1600)
+        page.wait_for_timeout(1100)
+    page.wait_for_timeout(1000)
+
+
+def _proxima_pagina(page):
+    """Tenta ir para a proxima pagina da lista. Devolve True se navegou."""
+    seletores = [
+        "li.andes-pagination__button--next:not(.andes-pagination__button--disabled) a",
+        ".andes-pagination__button--next:not(.andes-pagination__button--disabled) a",
+        "a[title='Seguinte']", "a[aria-label='Seguinte']",
+        "a[title='Próxima']", "a[aria-label='Próxima']",
+        "a[title='Proxima']", "a[rel='next']",
+    ]
+    for sel in seletores:
+        try:
+            el = page.query_selector(sel)
+        except Exception:
+            el = None
+        if not el:
+            continue
+        try:
+            el.scroll_into_view_if_needed(timeout=3000)
+            el.click(timeout=5000)
+            page.wait_for_load_state("domcontentloaded", timeout=30000)
+            page.wait_for_timeout(3500)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def ler(url_lista, headless=True, verbose=True, max_paginas=12):
+    """Abre a lista e devolve os produtos com preco, percorrendo TODAS as paginas."""
+    brutos = {}
     with reader.browser(headless=headless) as ctx:
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         page.goto(url_lista, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_timeout(5000)
         reader._aceitar_cookies(page)
-        # rola para carregar os cards preguicosos
-        for _ in range(6):
-            page.mouse.wheel(0, 1600)
-            page.wait_for_timeout(1100)
-        page.wait_for_timeout(1200)
 
-        if reader.bloqueado(page):
+        for npag in range(1, max_paginas + 1):
+            _rolar(page)
+
+            if reader.bloqueado(page):
+                if verbose:
+                    print("[lista] BLOQUEADO pelo ML")
+                break
+
+            itens = page.evaluate(JS_LISTA)
+            novos = 0
+            for i in itens:
+                if i.get("id") and i["id"] not in brutos:
+                    brutos[i["id"]] = i
+                    novos += 1
             if verbose:
-                print("[lista] BLOQUEADO pelo ML")
-            return []
-        itens = page.evaluate(JS_LISTA)
+                print(f"[lista] pagina {npag}: {len(itens)} lidos ({novos} novos)")
 
+            # nada novo numa pagina seguinte -> para (evita loop)
+            if npag > 1 and novos == 0:
+                break
+            # tenta avancar
+            reader._aceitar_cookies(page)
+            if not _proxima_pagina(page):
+                break
+
+    itens = list(brutos.values())
     limpos = []
     for i in itens:
         if i.get("por") is None:
@@ -119,5 +170,5 @@ def ler(url_lista, headless=True, verbose=True):
         limpos.append(i)
 
     if verbose:
-        print(f"[lista] {len(limpos)} produto(s) lidos em 1 pagina")
+        print(f"[lista] {len(limpos)} produto(s) lidos no total ({len(brutos)} brutos)")
     return limpos
