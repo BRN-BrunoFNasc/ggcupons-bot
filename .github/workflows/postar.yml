@@ -1,11 +1,10 @@
-name: Postar oferta
+name: Postar oferta (manual)
 
-# Posta 1 oferta no Telegram usando o preco ja gravado no banco (nao acessa o ML,
-# nao gera site). Leve e rapido. A cada 30 minutos.
+# Botao manual pra postar 1 oferta extra na hora, sem esperar o ciclo.
+# O agendamento automatico (preco + cadastro + post) agora fica todo no
+# workflow "Atualizar Garimpo Gamer", a cada 30 min.
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'    # a cada 30 min (UTC) - o GitHub pode atrasar/pular
   workflow_dispatch: {}
 
 permissions:

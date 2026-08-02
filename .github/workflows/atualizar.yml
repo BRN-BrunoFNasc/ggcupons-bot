@@ -1,11 +1,11 @@
 name: Atualizar Garimpo Gamer
 
-# Precos + cadastro de novos produtos + gera site + publica. A cada 1 hora.
-# (A postagem no Telegram fica no workflow "Postar oferta", a cada 30 min.)
+# Tudo em um: le precos + cadastra novos + posta 1 oferta + gera site + publica.
+# A cada 30 min, nos minutos :07 e :37 (fora do pico do topo da hora).
 
 on:
   schedule:
-    - cron: '17 * * * *'      # de hora em hora, no minuto :17 (fora do pico)
+    - cron: '7,37 * * * *'    # a cada 30 min (:07 e :37) - o GitHub pode atrasar/pular
   workflow_dispatch: {}          # botao "Run workflow" (manual)
 
 permissions:
@@ -38,14 +38,16 @@ jobs:
       - name: Preparar configuracao
         run: cp ci.env .env
 
-      - name: Ler precos + cadastrar novos (sem postar)
+      - name: Rodar ciclo (precos + cadastro + 1 post)
         env:
           ML_CLIENT_ID: ${{ secrets.ML_CLIENT_ID }}
           ML_CLIENT_SECRET: ${{ secrets.ML_CLIENT_SECRET }}
           ML_MATT_WORD: ${{ secrets.ML_MATT_WORD }}
           ML_MATT_TOOL: ${{ secrets.ML_MATT_TOOL }}
           ML_LISTA_URL: ${{ secrets.ML_LISTA_URL }}
-        run: python run_ci.py --vigia
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+        run: python run_ci.py --publicar
 
       - name: Gerar site
         run: python gerar_site.py
