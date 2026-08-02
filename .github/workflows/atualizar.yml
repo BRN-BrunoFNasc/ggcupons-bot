@@ -2,7 +2,7 @@ name: Atualizar Garimpo Gamer
 
 on:
   schedule:
-    - cron: '0 * * * *'      # a cada 3 horas (UTC)
+    - cron: '17 * * * *'      # a cada 1 hora (UTC)
   workflow_dispatch: {}          # botao "Run workflow" (manual)
 
 permissions:
