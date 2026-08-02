@@ -224,15 +224,6 @@
     "slots": 3
   },
   {
-    "nome": "Outros",
-    "prioridade": 10,
-    "cota": 3,
-    "cooldown_min": 20,
-    "palavras": [],
-    "bloqueio": [],
-    "slots": 1
-  },
-  {
     "nome": "Cabos",
     "palavras": [
       "Cabo HDMI",
@@ -244,5 +235,14 @@
     "cota": 6,
     "cooldown_min": 480,
     "slots": 3
+  },
+  {
+    "nome": "Outros",
+    "prioridade": 10,
+    "cota": 3,
+    "cooldown_min": 20,
+    "palavras": [],
+    "bloqueio": [],
+    "slots": 1
   }
 ]
