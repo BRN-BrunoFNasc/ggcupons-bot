@@ -309,12 +309,14 @@ def _herobg(itens, base=""):
         return ""
     # Duas colunas coladas nas BORDAS (esquerda <=7% / direita >=88%), deixando
     # todo o centro livre para titulo, busca, abas e filtros. (top, left, tam, vel, rot)
-    pos = [("4%", "1%", 158, 0.16, -7),    ("3%", "88%", 152, 0.30, 7),
-           ("28%", "4%", 128, 0.22, 5),    ("26%", "87%", 134, 0.34, -6),
-           ("52%", "0%", 146, 0.13, 6),    ("50%", "90%", 150, 0.26, -7),
-           ("74%", "3%", 120, 0.36, -9),   ("72%", "88%", 126, 0.19, 8),
-           ("15%", "91%", 104, 0.28, -4),  ("60%", "92%", 100, 0.16, 9),
-           ("86%", "1%", 112, 0.40, 10)]
+    # Espalhadas pela faixa lateral (left variando 0-14% e 84-93%), escalonadas
+    # em x e y pra nao empilhar. Escondem em telas <1100px (ver CSS). (top,left,tam,vel,rot)
+    pos = [("4%", "2%", 150, 0.15, -7),    ("3%", "90%", 146, 0.26, 7),
+           ("18%", "14%", 110, 0.30, 6),   ("18%", "84%", 114, 0.19, -6),
+           ("35%", "1%", 134, 0.22, -5),   ("36%", "93%", 128, 0.16, 8),
+           ("52%", "13%", 106, 0.34, 7),   ("54%", "85%", 116, 0.28, -5),
+           ("69%", "3%", 126, 0.13, -6),   ("73%", "91%", 102, 0.40, 10),
+           ("86%", "12%", 98, 0.36, 9)]
     tiles = ""
     for k, (pid, img) in enumerate(itens):
         t, l, w, sp, r = pos[k % len(pos)]

@@ -443,7 +443,7 @@ main{max-width:1660px}
 .photo3d:hover img{transform:scale(1.07)}
 .photo3d::after{content:"";position:absolute;inset:0;border-radius:16px;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.7);pointer-events:none}
-@media(max-width:820px){.hero-bg{display:none}}
+@media(max-width:1100px){.hero-bg{display:none}}
 
 /* ==== HOTBOX PREMIUM ==== */
 .hotbox{background:linear-gradient(135deg,#0d2a1d 0%,#123a2c 52%,#0b1f18 100%);
