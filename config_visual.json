@@ -10,8 +10,9 @@
     "Outros": "outros",
     "cat_9": "processador",
     "Peças de Computador": "processador",
-    "cat_10": "cabos"
+    "cat_10": "cabos",
+    "cat_11": "notebook"
   },
   "_nota": "Gerado pelo painel web. Cores da marca ficam no ci.env.",
-  "_updated": "02/08/2026, 18:34:55"
+  "_updated": "02/08/2026, 18:36:41"
 }
