@@ -307,14 +307,14 @@ def _herobg(itens, base=""):
     itens = [(pid, img) for pid, img in (itens or []) if img][:11]
     if not itens:
         return ""
-    # Posicoes SO nas laterais/cantos (left <=10% ou >=80%), deixando o centro
-    # livre para titulo, busca e filtros. (top, left, tamanho, velocidade, rotacao)
-    pos = [("3%", "0%", 132, 0.15, -8),   ("2%", "87%", 124, 0.30, 7),
-           ("30%", "2%", 108, 0.22, 5),   ("28%", "86%", 100, 0.34, -6),
-           ("56%", "0%", 120, 0.13, 6),   ("54%", "89%", 128, 0.26, -7),
-           ("80%", "5%", 104, 0.36, -10), ("78%", "84%", 112, 0.19, 9),
-           ("6%", "72%", 90, 0.28, -4),   ("84%", "68%", 96, 0.16, 8),
-           ("58%", "78%", 84, 0.40, 11)]
+    # Duas colunas coladas nas BORDAS (esquerda <=7% / direita >=88%), deixando
+    # todo o centro livre para titulo, busca, abas e filtros. (top, left, tam, vel, rot)
+    pos = [("4%", "1%", 122, 0.16, -7),    ("3%", "90%", 120, 0.30, 7),
+           ("27%", "5%", 100, 0.22, 5),    ("25%", "88%", 104, 0.34, -6),
+           ("50%", "0%", 112, 0.13, 6),    ("48%", "92%", 118, 0.26, -7),
+           ("72%", "4%", 96, 0.36, -9),    ("70%", "89%", 100, 0.19, 8),
+           ("14%", "93%", 80, 0.28, -4),   ("60%", "95%", 78, 0.16, 9),
+           ("86%", "2%", 84, 0.40, 10)]
     tiles = ""
     for k, (pid, img) in enumerate(itens):
         t, l, w, sp, r = pos[k % len(pos)]
@@ -402,17 +402,27 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
   var z=function(n){return (n<10?'0':'')+n;};
   var dt=function(s){return new Date(s.length<=10?s+'T00:00':s);};
   var chart, dias=30;
-  function fatia(){ if(!dias) return H;
+  function horas24(){ // serie de hora em hora (ultimas 24h) com carry-forward do ultimo preco
+    var now=Date.now(), ini=now-24*36e5, out=[];
+    for(var h=0;h<=24;h++){ var t=ini+h*36e5, last=null;
+      for(var k=0;k<H.length;k++){ if(dt(H[k].d).getTime()<=t) last=H[k].p; else break; }
+      if(last!==null) out.push({d:new Date(t).toISOString().slice(0,16),p:last}); }
+    return out.length>=2?out:H.slice(-2);
+  }
+  function fatia(){
+    if(dias===1) return horas24();
+    if(!dias) return H;
     var corte=Date.now()-dias*864e5;
     var f=H.filter(function(x){return dt(x.d).getTime()>=corte;});
-    return f.length>=2?f:H.slice(-2); }
+    return f.length>=2?f:H.slice(-2);
+  }
   function stats(arr){
     var ps=arr.map(function(x){return x.p;});
     var mn=Math.min.apply(null,ps), mx=Math.max.apply(null,ps);
     var med=ps.reduce(function(a,b){return a+b;},0)/ps.length, at=ps[ps.length-1];
     function g(id,v){var e=document.getElementById(id); if(e)e.textContent=brl(v);}
     g('st-min',mn);g('st-max',mx);g('st-med',med);g('st-atual',at);
-    return {mn:mn};
+    return {mn:mn,mx:mx};
   }
   // linha vertical tracejada seguindo o mouse
   var vline={id:'vline',afterDatasetsDraw:function(c){
@@ -422,14 +432,14 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
     g.lineWidth=1;g.strokeStyle=window.CORG+'55';g.setLineDash([4,4]);g.stroke();g.restore();
   }};
   function render(){
-    var arr=fatia(), st=stats(arr), mn=st.mn;
-    var span=(dt(arr[arr.length-1].d)-dt(arr[0].d))/864e5;
-    var porHora=span<=2.5;
+    var arr=fatia(), st=stats(arr), mn=st.mn, mx=st.mx;
+    var porHora=(dias===1);   // formato do eixo depende do FILTRO, nao dos dados
     var labels=arr.map(function(x){var d=dt(x.d);
-      return porHora?(z(d.getHours())+':'+z(d.getMinutes())):(d.getDate()+'/'+(d.getMonth()+1));});
+      return porHora?(z(d.getHours())+':'+z(d.getMinutes())):(z(d.getDate())+'/'+z(d.getMonth()+1));});
     var data=arr.map(function(x){return x.p;});
-    var cores=arr.map(function(x,i){return x.p===mn?window.CORMIN:(i===arr.length-1?window.CORG:'rgba(0,0,0,0)');});
-    var raios=arr.map(function(x,i){return (x.p===mn||i===arr.length-1)?4.5:0;});
+    var destaca=function(x,i){return (mn!==mx && x.p===mn)||i===arr.length-1;};
+    var cores=arr.map(function(x,i){return (mn!==mx && x.p===mn)?window.CORMIN:(i===arr.length-1?window.CORG:'rgba(0,0,0,0)');});
+    var raios=arr.map(function(x,i){return destaca(x,i)?4.5:0;});
     if(chart)chart.destroy();
     chart=new Chart(cv,{type:'line',data:{labels:labels,datasets:[{data:data,fill:true,
       borderColor:window.CORG,borderWidth:2.6,tension:.32,clip:8,
