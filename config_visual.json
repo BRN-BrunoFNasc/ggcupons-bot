@@ -1,7 +1,8 @@
 {
   "icones": {
-    "Jogos": "jogos"
+    "Jogos": "jogos",
+    "cat_8": "tv"
   },
   "_nota": "Gerado pelo painel web. Cores da marca ficam no ci.env.",
-  "_updated": "01/08/2026, 19:51:50"
+  "_updated": "02/08/2026, 01:27:20"
 }
