@@ -81,8 +81,12 @@ def svg(historico, largura=760, altura=280, cor="#2ee6a0", cor_min="#ff5a3c"):
 </svg>'''
 
 
-def spark(historico, w=200, h=44, cor="#15803d"):
-    """Mini-grafico de linha para caber num card."""
+def spark(historico, w=240, h=48, cor="#16a34a"):
+    """Mini-grafico de linha (com area) para caber num card.
+
+    Cor consistente (verde da marca) + area com gradiente + pontas arredondadas.
+    vector-effect=non-scaling-stroke mantem a espessura uniforme mesmo o SVG
+    sendo esticado pra largura do card (sem distorcer/afinar a linha)."""
     pts = [(_parse(x["recorded_at"]), x["price"]) for x in historico]
     pts = [(t, v) for t, v in pts if t and v]
     if len(pts) < 2:
@@ -92,10 +96,43 @@ def spark(historico, w=200, h=44, cor="#15803d"):
     vmin, vmax = min(vs), max(vs)
     rng = (vmax - vmin) or 1
     n = len(vs)
-    pl = " ".join(f"{i/(n-1)*w:.1f},{h-4-(v-vmin)/rng*(h-8):.1f}"
-                  for i, v in enumerate(vs))
-    fim_baixo = vs[-1] <= vs[0]
-    c = cor if fim_baixo else "#9ca3af"
-    return (f'<svg viewBox="0 0 {w} {h}" class="spark" preserveAspectRatio="none">'
-            f'<polyline points="{pl}" fill="none" stroke="{c}" stroke-width="2" '
-            f'stroke-linejoin="round" stroke-linecap="round"/></svg>')
+    pad = 5
+
+    def X(i):
+        return pad + i / (n - 1) * (w - 2 * pad)
+
+    def Y(v):
+        return pad + (1 - (v - vmin) / rng) * (h - 2 * pad)
+
+    pontos = [(X(i), Y(v)) for i, v in enumerate(vs)]
+    linha = _curva(pontos)  # path suave (Catmull-Rom) -> visual arredondado
+    area = f"{linha} L{X(n - 1):.1f},{h:.1f} L{X(0):.1f},{h:.1f} Z"
+    gid = "sp%d" % (abs(hash((tuple(round(v, 2) for v in vs), w))) % 100000)
+    return (
+        f'<svg viewBox="0 0 {w} {h}" class="spark" preserveAspectRatio="none" aria-hidden="true">'
+        f'<defs><linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0" stop-color="{cor}" stop-opacity=".20"/>'
+        f'<stop offset="1" stop-color="{cor}" stop-opacity="0"/></linearGradient></defs>'
+        f'<path d="{area}" fill="url(#{gid})" stroke="none"/>'
+        f'<path d="{linha}" fill="none" stroke="{cor}" stroke-width="2.2" '
+        f'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
+        f"</svg>"
+    )
+
+
+def _curva(pts, k=6.0):
+    """Path SVG suave (Catmull-Rom -> Bezier). Deixa a linha arredondada em vez de quebrada."""
+    if len(pts) < 2:
+        return ""
+    d = f"M{pts[0][0]:.1f},{pts[0][1]:.1f}"
+    n = len(pts)
+    for i in range(n - 1):
+        p0 = pts[i - 1] if i > 0 else pts[i]
+        p1, p2 = pts[i], pts[i + 1]
+        p3 = pts[i + 2] if i + 2 < n else pts[i + 1]
+        c1x = p1[0] + (p2[0] - p0[0]) / k
+        c1y = p1[1] + (p2[1] - p0[1]) / k
+        c2x = p2[0] - (p3[0] - p1[0]) / k
+        c2y = p2[1] - (p3[1] - p1[1]) / k
+        d += f" C{c1x:.1f},{c1y:.1f} {c2x:.1f},{c2y:.1f} {p2[0]:.1f},{p2[1]:.1f}"
+    return d

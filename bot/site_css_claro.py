@@ -433,6 +433,10 @@ main{max-width:1660px}
  transform-style:preserve-3d;will-change:transform}
 .photo3d{pointer-events:auto;cursor:pointer;text-decoration:none}
 .hero-bg a{pointer-events:auto}
+/* clique atravessa o texto do hero -> a FOTO INTEIRA fica clicavel (busca/abas seguem clicaveis) */
+.hero>h1,.hero>p,.hero>.herostats{pointer-events:none}
+.hero>h1 span{pointer-events:none}
+.hero .busca-wrap,.hero .lojas,.hero .faixas{pointer-events:auto}
 .photo3d img{width:100%;height:100%;object-fit:contain;display:block;padding:12px;
  background:#fff;transition:transform .22s ease}
 .photo3d:hover{box-shadow:0 30px 60px rgba(20,30,60,.30),0 6px 16px rgba(20,30,60,.16);z-index:5}
@@ -590,6 +594,56 @@ main{max-width:1660px}
 /* ===== icones: Pix preenchido em verde ===== */
 .benef.pix{color:#0e8a5f}
 .benef.pix .mi{fill:currentColor;stroke:none}
+
+/* ============ Refinamento visual + responsivo ============ */
+.lg{display:inline-flex;align-items:center;line-height:1;white-space:nowrap}
+.lg .lga{display:none}
+/* botoes de periodo do grafico */
+.periodos{display:flex;gap:6px;flex-wrap:wrap}
+.periodos button{background:var(--pane);border:1px solid var(--line2);color:var(--tx2);
+ border-radius:20px;padding:5px 13px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+.periodos button:hover{border-color:var(--ac);color:var(--ac)}
+.periodos button.on{background:var(--ac);color:#fff;border-color:var(--ac);box-shadow:0 3px 10px rgba(46,230,160,.25)}
+.grafico-wrap{position:relative;height:300px;margin-top:8px}
+.box-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+
+/* --- Tablet --- */
+@media(max-width:820px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px} }
+
+/* --- Celular --- */
+@media(max-width:640px){
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .card{border-radius:13px}
+ .card .foto{height:120px;padding:10px}
+ .card .txt{padding:9px 10px 12px}
+ .card .tit{font-size:11.5px;min-height:42px;line-height:1.34;font-weight:500}
+ .card .por{font-size:16px}
+ .card .de{font-size:10.5px}
+ .card .cat{font-size:9.5px}
+ .spark{height:26px;margin:5px 0 3px}
+ .selo{top:7px!important;left:7px!important;font-size:10px!important;padding:2px 6px!important;border-radius:6px!important}
+ .lojatag{top:7px!important;right:7px!important}
+ .lg{font-size:9px;padding:2px 6px;border-radius:5px}
+ .lg .lgt{display:none}.lg .lga{display:inline}
+ .card.hot::after{font-size:8.5px;letter-spacing:.03em;padding:3px 0}
+ .economia{font-size:9.5px;padding:2px 6px}
+ .flag{font-size:9.5px;padding:2px 6px}
+ .termo{font-size:10px;padding:2px 7px}
+ .grafico-wrap{height:230px}
+ .periodos{gap:5px}
+ .periodos button{padding:5px 10px;font-size:11.5px}
+ .fatos{grid-template-columns:repeat(2,1fr);gap:10px}
+ .prod h1{font-size:19px}
+ .preco-atual{font-size:30px}
+}
+/* --- Celular pequeno: manter 2 colunas (nunca 1 card gigante) --- */
+@media(max-width:400px){
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px}
+ .card .foto{height:106px;padding:8px}
+ .card .tit{font-size:11px;min-height:40px}
+ .card .por{font-size:15px}
+ .card .txt{padding:8px 9px 11px}
+}
 
 """
 

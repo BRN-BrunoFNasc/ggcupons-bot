@@ -1,5 +1,9 @@
 name: Publicar site
 
+# Fluxo leve: so regenera o site e publica na Cloudflare.
+# NAO le precos do ML, NAO posta no Telegram. Serve para o botao
+# "Publicar agora" do painel web (via workflow_dispatch).
+
 on:
   workflow_dispatch: {}
 
@@ -15,20 +19,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Instalar dependencias
+
+      - name: Instalar dependencias (sem navegador)
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Preparar configuracao
         run: cp ci.env .env
+
       - name: Gerar site
         run: python gerar_site.py
+
       - name: Publicar no Cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -1,8 +1,13 @@
 {
   "icones": {
     "Jogos": "jogos",
-    "cat_8": "tv"
+    "Consoles": "consoles",
+    "Gift Card": "gift card",
+    "Controles": "controles",
+    "Acessorios Gamer": "mouse",
+    "Fones": "fones",
+    "Monitores": "monitores",
+    "Outros": "outros"
   },
-  "_nota": "Gerado pelo painel web. Cores da marca ficam no ci.env.",
-  "_updated": "02/08/2026, 01:27:20"
+  "_nota": "Gerado pelo painel web. As cores da marca ficam no ci.env (COR_BARRA, COR_RODAPE, COR_PRECO, COR_LINHA)."
 }

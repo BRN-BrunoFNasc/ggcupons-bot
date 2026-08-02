@@ -34,12 +34,16 @@ LOJAS = {
 }
 
 def logo_loja(loja):
+    # .lgt = nome cheio (desktop) | .lga = abreviacao (mobile, evita cobrir o selo de desconto)
     if loja == "mercadolivre":
-        return '<span class="lg lg-mercadolivre">Mercado Livre</span>'
+        return ('<span class="lg lg-mercadolivre">'
+                '<span class="lgt">Mercado Livre</span><span class="lga">ML</span></span>')
     if loja == "amazon":
-        return '<span class="lg lg-amazon">amaz<i>o</i>n</span>'
+        return ('<span class="lg lg-amazon">'
+                '<span class="lgt">amaz<i>o</i>n</span><span class="lga">a<i>m</i>z</span></span>')
     if loja == "aliexpress":
-        return '<span class="lg lg-aliexpress">AliExpress</span>'
+        return ('<span class="lg lg-aliexpress">'
+                '<span class="lgt">AliExpress</span><span class="lga">Ali</span></span>')
     nome, _ = LOJAS.get(loja, ("Loja", "#888"))
     return '<span class="lg" style="background:#eee;color:#333">' + e(nome) + '</span>'
 
@@ -164,8 +168,29 @@ _ICONES = {
 _CATS = []
 
 
+def _carregar_visual():
+    """Le config_visual.json (gerado pelo painel web). Opcional: se nao existir,
+    devolve mapa vazio e nada muda. Formato: {"icones": {"<Categoria>": "<chave>"}}."""
+    caminho = Path(__file__).resolve().parent / "config_visual.json"
+    try:
+        with open(caminho, encoding="utf-8") as f:
+            dados = json.load(f)
+        return dados.get("icones", {}) or {}
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+_VISUAL_ICONES = _carregar_visual()
+
+
 def _icone(cat):
     key = (cat or "").strip().lower()
+    # Override do painel: aceita o nome exato da categoria ou a versao minuscula.
+    escolha = _VISUAL_ICONES.get(cat) or _VISUAL_ICONES.get(key)
+    if escolha:
+        escolha = str(escolha).strip().lower()
+        if escolha in _ICONES:
+            return _ICONES[escolha]
     return _ICONES.get(key, _ICONES["outros"])
 
 
@@ -282,12 +307,14 @@ def _herobg(itens, base=""):
     itens = [(pid, img) for pid, img in (itens or []) if img][:11]
     if not itens:
         return ""
-    pos = [("5%", "1%", 148, 0.15, -8),  ("9%", "84%", 120, 0.30, 7),
-           ("30%", "10%", 104, 0.22, 5),  ("26%", "90%", 96, 0.34, -6),
-           ("48%", "0%", 134, 0.13, 6),   ("52%", "85%", 150, 0.26, -7),
-           ("70%", "6%", 116, 0.36, -12), ("66%", "78%", 108, 0.19, 10),
-           ("82%", "20%", 112, 0.28, -4), ("86%", "60%", 122, 0.16, 9),
-           ("40%", "70%", 88, 0.40, 12)]
+    # Posicoes SO nas laterais/cantos (left <=10% ou >=80%), deixando o centro
+    # livre para titulo, busca e filtros. (top, left, tamanho, velocidade, rotacao)
+    pos = [("3%", "0%", 132, 0.15, -8),   ("2%", "87%", 124, 0.30, 7),
+           ("30%", "2%", 108, 0.22, 5),   ("28%", "86%", 100, 0.34, -6),
+           ("56%", "0%", 120, 0.13, 6),   ("54%", "89%", 128, 0.26, -7),
+           ("80%", "5%", 104, 0.36, -10), ("78%", "84%", 112, 0.19, 9),
+           ("6%", "72%", 90, 0.28, -4),   ("84%", "68%", 96, 0.16, 8),
+           ("58%", "78%", 84, 0.40, 11)]
     tiles = ""
     for k, (pid, img) in enumerate(itens):
         t, l, w, sp, r = pos[k % len(pos)]
@@ -328,7 +355,7 @@ def _insights(d):
 
 
 def _hist_box(d):
-    hist = [{"d": h["recorded_at"][:10], "p": round(h["price"], 2)} for h in d["hist"]]
+    hist = [{"d": h["recorded_at"][:16], "p": round(h["price"], 2)} for h in d["hist"]]
     corg = GRAF[0] or _cor(config.COR_LINHA)
     cormin = GRAF[1] or _cor(config.COR_PRECO)
     if len(hist) < 2:
@@ -337,6 +364,7 @@ def _hist_box(d):
         botoes = ""
     else:
         botoes = ('<div class="periodos">'
+                  '<button data-dias="1">24h</button>'
                   '<button data-dias="7">7 dias</button>'
                   '<button data-dias="30" class="on">30 dias</button>'
                   '<button data-dias="90">90 dias</button>'
@@ -371,11 +399,13 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
   var H=window.HIST||[]; if(H.length<2||!window.Chart) return;
   var cv=document.getElementById('grafico'); if(!cv) return;
   var brl=function(v){return 'R$ '+Number(v).toFixed(2).replace('.',',');};
+  var z=function(n){return (n<10?'0':'')+n;};
+  var dt=function(s){return new Date(s.length<=10?s+'T00:00':s);};
   var chart, dias=30;
   function fatia(){ if(!dias) return H;
     var corte=Date.now()-dias*864e5;
-    var f=H.filter(function(x){return new Date(x.d).getTime()>=corte;});
-    return f.length>=2?f:H; }
+    var f=H.filter(function(x){return dt(x.d).getTime()>=corte;});
+    return f.length>=2?f:H.slice(-2); }
   function stats(arr){
     var ps=arr.map(function(x){return x.p;});
     var mn=Math.min.apply(null,ps), mx=Math.max.apply(null,ps);
@@ -384,24 +414,48 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
     g('st-min',mn);g('st-max',mx);g('st-med',med);g('st-atual',at);
     return {mn:mn};
   }
+  // linha vertical tracejada seguindo o mouse
+  var vline={id:'vline',afterDatasetsDraw:function(c){
+    var t=c.tooltip; if(!(t&&t._active&&t._active.length))return;
+    var x=t._active[0].element.x, a=c.chartArea, g=c.ctx;
+    g.save();g.beginPath();g.moveTo(x,a.top);g.lineTo(x,a.bottom);
+    g.lineWidth=1;g.strokeStyle=window.CORG+'55';g.setLineDash([4,4]);g.stroke();g.restore();
+  }};
   function render(){
     var arr=fatia(), st=stats(arr), mn=st.mn;
-    var labels=arr.map(function(x){var d=new Date(x.d);return d.getDate()+'/'+(d.getMonth()+1);});
+    var span=(dt(arr[arr.length-1].d)-dt(arr[0].d))/864e5;
+    var porHora=span<=2.5;
+    var labels=arr.map(function(x){var d=dt(x.d);
+      return porHora?(z(d.getHours())+':'+z(d.getMinutes())):(d.getDate()+'/'+(d.getMonth()+1));});
     var data=arr.map(function(x){return x.p;});
     var cores=arr.map(function(x,i){return x.p===mn?window.CORMIN:(i===arr.length-1?window.CORG:'rgba(0,0,0,0)');});
-    var raios=arr.map(function(x,i){return (x.p===mn||i===arr.length-1)?5:0;});
+    var raios=arr.map(function(x,i){return (x.p===mn||i===arr.length-1)?4.5:0;});
     if(chart)chart.destroy();
     chart=new Chart(cv,{type:'line',data:{labels:labels,datasets:[{data:data,fill:true,
-      borderColor:window.CORG,borderWidth:2.5,tension:.25,
-      pointBackgroundColor:cores,pointBorderColor:cores,pointRadius:raios,pointHoverRadius:6,
-      backgroundColor:function(ctx){var a=ctx.chart.ctx.createLinearGradient(0,0,0,300);
-        a.addColorStop(0,window.CORG+'40');a.addColorStop(1,window.CORG+'00');return a;}}]},
-      options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},
-        plugins:{legend:{display:false},tooltip:{callbacks:{
-          title:function(i){return arr[i[0].dataIndex].d.split('-').reverse().join('/');},
-          label:function(i){return brl(i.raw);}}}},
-        scales:{y:{ticks:{callback:function(v){return brl(v);}},grid:{color:'rgba(0,0,0,.05)'}},
-          x:{ticks:{maxTicksLimit:8,autoSkip:true},grid:{display:false}}}}});
+      borderColor:window.CORG,borderWidth:2.6,tension:.32,clip:8,
+      pointBackgroundColor:cores,pointBorderColor:'#fff',pointBorderWidth:1.5,pointRadius:raios,
+      pointHoverRadius:6,pointHoverBorderWidth:2,pointHoverBackgroundColor:window.CORG,
+      backgroundColor:function(ctx){var ch=ctx.chart,ca=ch.chartArea; if(!ca)return window.CORG+'22';
+        var g=ch.ctx.createLinearGradient(0,ca.top,0,ca.bottom);
+        g.addColorStop(0,window.CORG+'45');g.addColorStop(1,window.CORG+'00');return g;}}]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:450},
+        layout:{padding:{top:8,right:6,left:2,bottom:2}},
+        interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{
+          backgroundColor:'#0f1a15',borderColor:window.CORG,borderWidth:1,padding:{x:12,y:9},
+          cornerRadius:10,displayColors:false,caretSize:6,
+          titleColor:'#a8c4b6',titleFont:{size:11,weight:'500'},
+          bodyColor:'#fff',bodyFont:{size:15,weight:'800'},
+          callbacks:{
+            title:function(i){var d=dt(arr[i[0].dataIndex].d);
+              return d.getDate()+'/'+z(d.getMonth()+1)+' · '+z(d.getHours())+':'+z(d.getMinutes());},
+            label:function(i){return brl(i.raw);}}}},
+        scales:{
+          y:{ticks:{callback:function(v){return brl(v);},font:{size:11},color:'#9aa0a6',maxTicksLimit:5,padding:6},
+             grid:{color:'rgba(0,0,0,.06)',drawTicks:false},border:{display:false}},
+          x:{ticks:{maxTicksLimit:7,autoSkip:true,maxRotation:0,font:{size:11},color:'#9aa0a6',padding:4},
+             grid:{display:false},border:{display:false}}}},
+      plugins:[vline]});
   }
   document.querySelectorAll('.periodos button').forEach(function(b){
     b.addEventListener('click',function(){
@@ -530,7 +584,15 @@ def gerar():
         _gerar_favicons(SAIDA / "logo.png", SAIDA, _cor(config.COR_BARRA))
 
     global _CATS
-    _CATS = sorted({p.get("categoria") or "Outros" for p in produtos})
+    _presentes = {p.get("categoria") or "Outros" for p in produtos}
+    try:
+        from bot import categorias as _cats_mod
+        _ordem = [c.get("nome") for c in _cats_mod.carregar()]
+    except Exception:
+        _ordem = []
+    _idx = {nome: i for i, nome in enumerate(_ordem)}
+    # ordena pela posicao no categorias.json (o que o painel controla); resto vai ao fim, alfabetico
+    _CATS = sorted(_presentes, key=lambda c: (_idx.get(c, 10_000), c))
 
     dados = []
     for p in produtos:
