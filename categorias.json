@@ -186,6 +186,19 @@
     "slots": 1
   },
   {
+    "nome": "Televisão",
+    "palavras": [
+      "Televisão",
+      "tv",
+      "smart tv"
+    ],
+    "bloqueio": [],
+    "prioridade": 45,
+    "cota": 6,
+    "cooldown_min": 20,
+    "slots": 3
+  },
+  {
     "nome": "Monitores",
     "prioridade": 30,
     "cota": 5,
@@ -204,18 +217,5 @@
     "palavras": [],
     "bloqueio": [],
     "slots": 1
-  },
-  {
-    "nome": "Televisão",
-    "palavras": [
-      "Televisão",
-      "tv",
-      "smart tv"
-    ],
-    "bloqueio": [],
-    "prioridade": 45,
-    "cota": 6,
-    "cooldown_min": 20,
-    "slots": 3
   }
 ]
