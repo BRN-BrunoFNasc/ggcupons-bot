@@ -231,5 +231,18 @@
     "palavras": [],
     "bloqueio": [],
     "slots": 1
+  },
+  {
+    "nome": "Cabos",
+    "palavras": [
+      "Cabo HDMI",
+      "Cabo p2",
+      "cabo"
+    ],
+    "bloqueio": [],
+    "prioridade": 55,
+    "cota": 6,
+    "cooldown_min": 480,
+    "slots": 3
   }
 ]
