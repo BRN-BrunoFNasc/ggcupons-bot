@@ -41,6 +41,7 @@ def build_info(product, rd, summary):
     desc_cupom = mc["desconto"] if mc else None
 
     return {
+        "id": product.get("id"),
         "preco_cupom": preco_cupom,
         "desconto_cupom": desc_cupom,
         "cupom_regra": cupom_regra,
@@ -93,6 +94,11 @@ def caption(info, tier=None):
     if info.get("hist_line"):
         L.append("")
         L.append(info["hist_line"])
+    # link para a pagina do produto no site (grafico de historico de preco)
+    _site = (getattr(config, "SITE_URL", "") or "").rstrip("/")
+    _pid = info.get("id")
+    if _site and _pid:
+        L.append(f'📈 <a href="{escape(_site)}/p/{escape(str(_pid))}.html">Ver histórico de preço</a>')
     if info.get("cupom"):
         L.append("")
         if info.get("preco_cupom"):
@@ -110,7 +116,9 @@ def caption(info, tier=None):
     else:
         L.append("🛒 <b>👉 PEGAR OFERTA</b>")
     L.append("")
-    destino = (getattr(config, "LINK_BIO", "") or getattr(config, "CHANNEL_INVITE", ""))
+    # "Siga o Garimpo" leva para a aba Redes do site (links.html), nao direto pro Telegram
+    _siteb = (getattr(config, "SITE_URL", "") or "").rstrip("/")
+    destino = (f"{_siteb}/links.html" if _siteb else "") or getattr(config, "CHANNEL_INVITE", "")
     marca = escape(config.BRAND_NAME.title())
     if destino:
         L.append(f'📣 <a href="{escape(destino)}">Siga o {marca}</a> '

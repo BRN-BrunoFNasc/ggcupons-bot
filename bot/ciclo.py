@@ -34,8 +34,6 @@ def executar(publicar=False, verbose=True):
     if item.get("urgente"):
         tier = "MENOR_PRECO" if tier == "MENOR_PRECO" else "DESCONTO_FORTE"
     caption = tracker.montar_caption(pack["info"], tier)
-    if item.get("urgente"):
-        caption = (f"⚡ <b>BAIXOU AGORA — {item['queda']:.0f}% em minutos</b>\n" + caption)
 
     if not publicar:
         print("=" * 46)

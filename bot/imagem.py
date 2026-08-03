@@ -93,6 +93,12 @@ def _qr(data, size):
     return q.make_image(fill_color="black", back_color="white").convert("RGBA").resize((size, size))
 
 
+def _link_redes():
+    """URL da aba Redes do site (links.html). Fallback: convite do Telegram."""
+    site = (getattr(config, "SITE_URL", "") or "").rstrip("/")
+    return (site + "/links.html") if site else config.CHANNEL_INVITE
+
+
 def gerar_card(product, info, out_path, logo_path=None):
     # 1) template com zonas definidas (arte de designer)
     tpl = config.TEMPLATE_PATH
@@ -274,9 +280,7 @@ def gerar_card_limpo(product, info, out_path, logo_path=None):
     px = (W - prod.width) // 2
     py = topo + 26 + (area_h - prod.height) // 2
 
-    # sombra sob o produto (da profundidade)
-    _sombra(img, (px + 30, py + prod.height - 26, px + prod.width - 30, py + prod.height + 6),
-            raio=40, blur=22, forca=52, desloc=(0, 4))
+    # (sombra sob o produto removida - o usuario achou feio)
     if prod.mode == "RGBA":
         img.alpha_composite(prod, (px, py))
     else:
@@ -322,13 +326,13 @@ def gerar_card_limpo(product, info, out_path, logo_path=None):
     d = ImageDraw.Draw(img)
     d.rectangle([0, H - FT, W, H - FT + 3], fill=C.COR_LINHA)
     try:
-        qr = _qr(C.CHANNEL_INVITE, 116)
+        qr = _qr(_link_redes(), 116)
         qx, qy = W - 158, H - FT + 24
         d.rounded_rectangle([qx - 8, qy - 8, qx + 124, qy + 124], radius=12, fill=BRANCO)
         img.alpha_composite(qr, (qx, qy))
     except Exception:
         pass
-    d.text((48, H - FT + 42), "Participe do canal no Telegram",
+    d.text((48, H - FT + 42), "Siga-nos em nossas redes sociais",
            font=_font(34), fill=BRANCO)
     d.text((48, H - FT + 92), "Promoções e Cupons todos os dias!",
            font=_font(34), fill=C.COR_TEXTO2)
@@ -406,13 +410,13 @@ def gerar_card_template(product, info, out_path, template_path, logo_path=None):
     # QR
     try:
         qx0, qy0, qx1, qy1 = config.ZONA_QR
-        _paste_fit(img, _qr(config.CHANNEL_INVITE, qx1 - qx0), config.ZONA_QR)
+        _paste_fit(img, _qr(_link_redes(), qx1 - qx0), config.ZONA_QR)
     except Exception:
         pass
 
     # CTA no rodape
     cx0, cy0, cx1, cy1 = config.ZONA_CTA
-    d.text((cx0, cy0 + 8), "Participe do canal no Telegram", font=_font(36), fill=WHITE)
+    d.text((cx0, cy0 + 8), "Siga-nos em nossas redes sociais", font=_font(36), fill=WHITE)
     d.text((cx0, cy0 + 58), "Promoções e Cupons todos os dias!", font=_font(36), fill=GREEN)
 
     img.save(out_path, "PNG")
@@ -512,7 +516,7 @@ def gerar_card_fundo(product, info, out_path, fundo_path, logo_path=None):
     except Exception:
         pass
     d = ImageDraw.Draw(base)
-    d.text((48, H - 132), "Participe do canal no Telegram", font=_font(35), fill=WHITE)
+    d.text((48, H - 132), "Siga-nos em nossas redes sociais", font=_font(35), fill=WHITE)
     d.text((48, H - 84), "Promoções e Cupons todos os dias!", font=_font(35), fill=GREEN)
 
     base.convert("RGB").save(out_path, "PNG")
