@@ -1,12 +1,13 @@
 name: Atualizar Garimpo Gamer
 
-# Tudo em um: le precos + cadastra novos + posta 1 oferta + gera site + publica.
-# A cada 30 min, nos minutos :07 e :37 (fora do pico do topo da hora).
+# Le precos + cadastra novos produtos da lista + gera site + publica. NAO posta
+# (a postagem fica no workflow "Postar oferta", disparado a cada 10 min).
+# Disparado pelo cron-job.org (~1h). O schedule abaixo e so um backup.
 
 on:
   schedule:
-    - cron: '7,37 * * * *'    # a cada 30 min (:07 e :37) - o GitHub pode atrasar/pular
-  workflow_dispatch: {}          # botao "Run workflow" (manual)
+    - cron: '17 * * * *'      # backup: de hora em hora (o gatilho real e externo)
+  workflow_dispatch: {}          # gatilho do cron-job.org / botao manual
 
 permissions:
   contents: write
@@ -38,16 +39,14 @@ jobs:
       - name: Preparar configuracao
         run: cp ci.env .env
 
-      - name: Rodar ciclo (precos + cadastro + 1 post)
+      - name: Ler precos + cadastrar novos (sem postar)
         env:
           ML_CLIENT_ID: ${{ secrets.ML_CLIENT_ID }}
           ML_CLIENT_SECRET: ${{ secrets.ML_CLIENT_SECRET }}
           ML_MATT_WORD: ${{ secrets.ML_MATT_WORD }}
           ML_MATT_TOOL: ${{ secrets.ML_MATT_TOOL }}
           ML_LISTA_URL: ${{ secrets.ML_LISTA_URL }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-        run: python run_ci.py --publicar
+        run: python run_ci.py --vigia
 
       - name: Gerar site
         run: python gerar_site.py

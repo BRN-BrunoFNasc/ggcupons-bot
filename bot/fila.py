@@ -106,30 +106,31 @@ def _minutos_desde_post(product):
 
 
 def pontuacao(x):
-    """Pontua a oferta (maior = posta primeiro). Modelo dos sites de oferta:
-    maior desconto, menor preço histórico, cupom, e itens mais procurados/do momento."""
-    s = 0.0
-    # 1) maior desconto (peso principal)
-    s += (x.get("desconto") or 0) * 3.0
-    # 2) menor preço histórico (selo de credibilidade -> forte destaque)
+    """Pontua a oferta priorizando VARIEDADE (cobrir o catálogo inteiro) e, dentro
+    disso, as melhores ofertas.
+
+    A base é o tempo desde o último post (nunca postado -> vai primeiro), o que faz
+    o bot percorrer TODOS os produtos antes de repetir. Ofertas boas (desconto,
+    menor preço histórico, cupom, mais procurados) ganham um 'adiantamento' em
+    minutos virtuais, então aparecem mais cedo — sem monopolizar a fila."""
+    # base: ha quanto tempo nao e postado (nunca postado = topo)
+    s = float(min(_minutos_desde_post(x), 100000))
+    # adiantamento por qualidade (em "minutos virtuais")
+    s += (x.get("desconto") or 0) * 6.0          # 30% de desconto ~ +180 min
     summ = x.get("summary") or {}
     if summ.get("enough_history"):
         janela = summ.get("is_lowest_window", 0) or 0
         if janela >= 90:
-            s += 300
+            s += 400
         elif janela >= 30:
-            s += 220
+            s += 250
         elif janela >= 7:
             s += 120
-    # 3) cupom disponível
     if x.get("tier") == "CUPOM":
-        s += 70
-    # 4) mais procurados / do momento
-    s += (x.get("trend_score") or 0) * 1.5
+        s += 120
+    s += (x.get("trend_score") or 0) * 2.0
     if x.get("mais_vendido"):
-        s += 50
-    # leve empurrão pra quem faz mais tempo que nao aparece (variedade)
-    s += min(_minutos_desde_post(x) / 60.0, 24) * 0.5
+        s += 60
     return s
 
 
