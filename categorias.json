@@ -186,7 +186,7 @@
     "slots": 1
   },
   {
-    "nome": "Televisão",
+    "nome": "Televisões",
     "palavras": [
       "Televisão",
       "tv",
@@ -196,6 +196,20 @@
     "prioridade": 45,
     "cota": 6,
     "cooldown_min": 20,
+    "slots": 3
+  },
+  {
+    "nome": "Notebooks",
+    "palavras": [
+      "Notebook",
+      "Vivobook",
+      "Helios Neo",
+      "Predator"
+    ],
+    "bloqueio": [],
+    "prioridade": 60,
+    "cota": 6,
+    "cooldown_min": 480,
     "slots": 3
   },
   {
@@ -219,6 +233,19 @@
     ],
     "bloqueio": [],
     "prioridade": 50,
+    "cota": 6,
+    "cooldown_min": 480,
+    "slots": 3
+  },
+  {
+    "nome": "Cabos",
+    "palavras": [
+      "Cabo HDMI",
+      "Cabo p2",
+      "cabo"
+    ],
+    "bloqueio": [],
+    "prioridade": 55,
     "cota": 6,
     "cooldown_min": 480,
     "slots": 3
