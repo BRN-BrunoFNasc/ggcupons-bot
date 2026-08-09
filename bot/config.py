@@ -143,7 +143,7 @@ ALI_APP_SECRET = _get("ALI_APP_SECRET", "")
 ALI_TRACKING_ID = _get("ALI_TRACKING_ID", "")
 
 # URL publica da sua vitrine de afiliado do ML (/social/SEU_USUARIO)
-ML_VITRINE = _get("ML_VITRINE", "https://www.mercadolivre.com.br/social/fernandesbruno20211130222643")
+ML_VITRINE = _get("ML_VITRINE", "")  # sem default pessoal (era o usuario do ML, exposto no repo publico)
 
 # Como montar o link de afiliado do ML:
 #   "matt"  -> URL do produto + matt_word/matt_tool  (a confirmar no painel)
