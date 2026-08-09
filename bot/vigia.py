@@ -124,6 +124,15 @@ def _varrer_amazon(verbose=True):
             "coupon_code": r.get("coupon_code") or "",
             "coupon_note": r.get("coupon_note") or "",
         })
+        # auto-classifica pela primeira leitura (quando adicionado so com o link)
+        if not (p.get("categoria") or "").strip() and r.get("title"):
+            try:
+                from bot import categorias as _cats
+                _cn = (_cats.classificar(r["title"]) or {}).get("nome")
+                if _cn:
+                    database.atualizar_dados(pid, {"categoria": _cn})
+            except Exception:
+                pass
         if anterior and novo and novo < anterior:
             queda = (anterior - novo) / anterior * 100
             if queda >= config.QUEDA_URGENTE_PCT:
