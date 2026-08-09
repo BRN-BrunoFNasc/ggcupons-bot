@@ -438,9 +438,15 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
     g.save();g.beginPath();g.moveTo(x,a.top);g.lineTo(x,a.bottom);
     g.lineWidth=1;g.strokeStyle=window.CORG+'55';g.setLineDash([4,4]);g.stroke();g.restore();
   }};
+  function porDia(a){ var m={},o=[]; a.forEach(function(x){ m[x.d.slice(0,10)]=x; });
+    Object.keys(m).sort().forEach(function(k){ o.push(m[k]); }); return o; }
   function render(){
-    var arr=fatia(), st=stats(arr), mn=st.mn, mx=st.mx;
+    var raw=fatia(); stats(raw);              // stats usam o dado real
     var porHora=(dias===1);   // formato do eixo depende do FILTRO, nao dos dados
+    // nas visoes de dias, 1 ponto por dia (ultimo preco do dia) -> linha limpa, sem dia repetido
+    var arr=raw; if(!porHora){ var ag=porDia(raw); if(ag.length>=2) arr=ag; }
+    var _ps=arr.map(function(x){return x.p;});
+    var mn=Math.min.apply(null,_ps), mx=Math.max.apply(null,_ps);
     var labels=arr.map(function(x){var d=dt(x.d);
       return porHora?(z(d.getHours())+':'+z(d.getMinutes())):(z(d.getDate())+'/'+z(d.getMonth()+1));});
     var data=arr.map(function(x){return x.p;});

@@ -92,6 +92,12 @@ def spark(historico, w=240, h=48, cor="#16a34a"):
     if len(pts) < 2:
         return ""
     pts.sort(key=lambda x: x[0])
+    # 1 ponto por dia (ultimo preco do dia) -> mini-linha limpa, sem dia repetido
+    _pd = {}
+    for t, v in pts:
+        _pd[t.date()] = v
+    if len(_pd) >= 2:
+        pts = [(None, _pd[k]) for k in sorted(_pd.keys())]
     vs = [v for _, v in pts]
     vmin, vmax = min(vs), max(vs)
     rng = (vmax - vmin) or 1
