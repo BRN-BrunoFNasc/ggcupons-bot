@@ -360,9 +360,14 @@ def _hist_box(d):
     hist = [{"d": h["recorded_at"][:16], "p": round(h["price"], 2)} for h in d["hist"]]
     corg = GRAF[0] or _cor(config.COR_LINHA)
     cormin = GRAF[1] or _cor(config.COR_PRECO)
+    _loja = (d.get("p") or {}).get("loja") or ""
     if len(hist) < 2:
-        corpo = ('<div class="sem-grafico">Histórico em construção — '
-                 'acompanhamos o preço todos os dias, volte em breve.</div>')
+        if _loja == "amazon":
+            corpo = ('<div class="sem-grafico">📊 <b>Em construção</b> — o histórico de preço '
+                     'deste produto da Amazon estará disponível em breve.</div>')
+        else:
+            corpo = ('<div class="sem-grafico">Histórico em construção — '
+                     'acompanhamos o preço todos os dias, volte em breve.</div>')
         botoes = ""
     else:
         botoes = ('<div class="periodos">'

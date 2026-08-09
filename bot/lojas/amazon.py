@@ -21,7 +21,8 @@ class Amazon(Loja):
 
     def detecta(self, s):
         s = str(s or "")
-        return "amazon.com" in s or "amzn.to" in s or bool(self.RE_ASIN.search(s))
+        return ("amazon.com" in s or "amzn.to" in s or "link.amazon" in s
+                or bool(self.RE_ASIN.search(s)))
 
     def extrair_id(self, s):
         m = self.RE_ASIN.search(str(s or ""))
