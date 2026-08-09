@@ -490,9 +490,10 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
 """
 
 
-def cabecalho(titulo, desc, base="", canonical="", cat_atual=""):
+def cabecalho(titulo, desc, base="", canonical="", cat_atual="", og_image="", og_dims=True):
     logo = f'<img src="{base}logo.png" alt="">' if (SAIDA / "logo.png").exists() else ""
     url = (config.SITE_URL + "/" + canonical) if canonical else config.SITE_URL
+    ogimg = og_image or (config.SITE_URL + "/og/home.png")
     css = (CSS.replace("{{BG}}", _cor(config.COR_RODAPE))
               .replace("{{BARRA}}", _cor(config.COR_BARRA))
               .replace("{{AC}}", _cor(config.COR_LINHA))
@@ -505,9 +506,14 @@ def cabecalho(titulo, desc, base="", canonical="", cat_atual=""):
 <link rel="icon" type="image/png" sizes="32x32" href="{base}favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="{base}favicon-16x16.png">
 <link rel="apple-touch-icon" href="{base}apple-touch-icon.png">
+<meta property="og:site_name" content="{e(config.BRAND_NAME)}">
 <meta property="og:title" content="{e(titulo)}"><meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{e(url)}"><meta property="og:type" content="website">
-<meta property="og:image" content="{e(config.SITE_URL)}/favicon-180x180.png">
+<meta property="og:image" content="{e(ogimg)}"><meta property="og:image:alt" content="{e(titulo)}">
+{'<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' if og_dims else ''}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{e(titulo)}"><meta name="twitter:description" content="{e(desc)}">
+<meta name="twitter:image" content="{e(ogimg)}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -746,10 +752,12 @@ def gerar():
                                     "name": LOJAS.get(p.get("loja"), ("Loja",))[0]}}}
         ldjson = ('<script type="application/ld+json">'
                   + json.dumps(ld, ensure_ascii=False) + '</script>')
-        pag = (cabecalho(f"{p.get('title')} — {config.BRAND_NAME}",
+        pag = (cabecalho(f"{p.get('title')} por {brl(d['por'])} — {config.BRAND_NAME}",
                          f"Histórico de preço de {p.get('title')}. Saiba se {brl(d['por'])} "
                          f"é um bom preço antes de comprar.", base="../",
-                         canonical=f"p/{p['id']}.html") + corpo + ldjson + _cta_telegram("../") + _rodape("../"))
+                         canonical=f"p/{p['id']}.html",
+                         og_image=(p.get("thumbnail") or ""), og_dims=False)
+               + corpo + ldjson + _cta_telegram("../") + _rodape("../"))
         (SAIDA / "p" / f"{p['id']}.html").write_text(pag, encoding="utf-8")
 
     # ---------- home ----------
@@ -864,8 +872,18 @@ def gerar():
         pag = (cabecalho(f"{cat} em oferta — {config.BRAND_NAME}",
                          f"Ofertas de {cat.lower()} com histórico de preço. "
                          f"Games e tecnologia com desconto verificado.",
-                         base="../", canonical=f"c/{cat_slug(cat)}.html", cat_atual=cat) + corpo + _cta_telegram("../") + _rodape("../"))
+                         base="../", canonical=f"c/{cat_slug(cat)}.html", cat_atual=cat,
+                         og_image=f"{config.SITE_URL}/og/cat-{cat_slug(cat)}.png")
+               + corpo + _cta_telegram("../") + _rodape("../"))
         (SAIDA / "c" / f"{cat_slug(cat)}.html").write_text(pag, encoding="utf-8")
+
+    # ---------- banners de compartilhamento (Open Graph) ----------
+    try:
+        from bot import og as _og
+        _og.gerar_todos(str(SAIDA / "og"), list(por_cat.keys()), cat_slug, brand=config.BRAND_NAME)
+        print(f"[og] {1 + len(por_cat)} banner(s) de compartilhamento gerados")
+    except Exception as _e:
+        print(f"[og] aviso: nao gerou banners ({_e})")
 
     # ---------- links ----------
     redes = [("Canal no Telegram", config.CHANNEL_INVITE, "telegram"),
