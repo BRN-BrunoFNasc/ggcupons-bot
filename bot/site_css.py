@@ -194,6 +194,14 @@ JS = """
   }
 
   document.querySelectorAll('.side input[data-f]').forEach(i=>i.addEventListener('change',aplica));
+  // abas de loja do topo (Todas / Mercado Livre / Amazon) -> sincroniza com os checkboxes e filtra
+  document.querySelectorAll('.lojas button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.lojas button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const lj=b.dataset.loja||'';
+    document.querySelectorAll('.side input[data-f=loja]').forEach(i=>{ i.checked = lj ? (i.value===lj) : false; });
+    aplica();
+  }));
   const pmin=document.getElementById('pmin'),pmax=document.getElementById('pmax');
   [pmin,pmax].forEach(el=>el&&el.addEventListener('input',()=>{
     fmin=+((pmin||{}).value)||0; fmax=+((pmax||{}).value)||0; aplica();}));
