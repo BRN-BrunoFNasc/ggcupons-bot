@@ -46,6 +46,7 @@ jobs:
           ML_MATT_WORD: ${{ secrets.ML_MATT_WORD }}
           ML_MATT_TOOL: ${{ secrets.ML_MATT_TOOL }}
           ML_LISTA_URL: ${{ secrets.ML_LISTA_URL }}
+          SCRAPER_TOKEN: ${{ secrets.SCRAPER_TOKEN }}
         run: python run_ci.py --vigia
 
       - name: Gerar site

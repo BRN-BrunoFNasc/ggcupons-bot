@@ -258,7 +258,8 @@ def atualizar_dados(product_id, dados, db_path=None):
     """Atualiza campos vindos da lista (titulo, foto, parcelas, frete...)."""
     campos = {k: v for k, v in dados.items()
               if k in ("title", "thumbnail", "permalink", "parcelas", "frete",
-                       "pagamento", "categoria") and v is not None}
+                       "pagamento", "categoria", "coupon_code", "coupon_note")
+              and v is not None}
     if not campos:
         return
     con = _conn(db_path)

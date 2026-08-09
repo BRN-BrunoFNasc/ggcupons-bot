@@ -136,6 +136,9 @@ URGENTE_GAP_MIN = int(_get("URGENTE_GAP_MIN", "20") or 20)           # gap minim
 
 # ===== Outras lojas =====
 AMZ_TAG = _get("AMZ_TAG", "")              # sua tag de afiliado Amazon (ex.: garimpo-20)
+# Intervalo minimo (horas) entre leituras do MESMO produto Amazon via Scrape.do.
+# Cada leitura gasta tokens da API, entao lemos no maximo 1x/dia por padrao.
+AMZ_INTERVALO_H = float(_get("AMZ_INTERVALO_H", "24") or 24)
 _amz = _get("AMZ_URLS", "")
 AMZ_URLS = [u.strip() for u in _amz.split("|") if u.strip()]
 ALI_APP_KEY = _get("ALI_APP_KEY", "")      # AliExpress Open Platform

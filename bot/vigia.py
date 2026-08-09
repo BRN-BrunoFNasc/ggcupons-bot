@@ -20,7 +20,9 @@ def varrer(cadastrar_novos=True, verbose=True):
     """
     database.init_db()
     if getattr(config, "MODO_LEVE", False):
-        return _varrer_catalogo(cadastrar_novos=cadastrar_novos, verbose=verbose)
+        quedas = _varrer_catalogo(cadastrar_novos=cadastrar_novos, verbose=verbose)
+        quedas += _varrer_amazon(verbose=verbose)
+        return quedas
     try:
         brutos = descoberta.coletar()
     except Exception as e:
@@ -67,6 +69,73 @@ def varrer(cadastrar_novos=True, verbose=True):
     if verbose:
         print(f"[vigia] {len(brutos)} lidos | {atualizados} precos atualizados | "
               f"{len(quedas)} queda(s) | {novos} novo(s) produto(s)")
+    return quedas
+
+
+def _varrer_amazon(verbose=True):
+    """Le os precos dos produtos Amazon via Scrape.do (proxy residencial).
+
+    Trava de custo: so re-le um produto se passou AMZ_INTERVALO_H desde a ultima
+    leitura (cada leitura gasta tokens da API). Sem SCRAPER_TOKEN, nao faz nada."""
+    import os
+    from datetime import datetime, timezone
+    if not os.environ.get("SCRAPER_TOKEN", "").strip():
+        return []
+    from bot.lojas.amazon import Amazon
+
+    intervalo_h = float(getattr(config, "AMZ_INTERVALO_H", 24) or 24)
+    amz = Amazon()
+    agora = datetime.now(timezone.utc)
+    produtos = [p for p in database.get_products(only_active=True)
+                if (p.get("loja") == "amazon")]
+    quedas, lidos, pulados = [], 0, 0
+
+    for p in produtos:
+        pid = p["id"]
+        hist = database.get_price_history(pid)
+        anterior = hist[-1]["price"] if hist else None
+        # throttle por tempo desde a ultima leitura
+        if hist:
+            try:
+                t = datetime.fromisoformat(hist[-1].get("recorded_at"))
+                if t.tzinfo is None:
+                    t = t.replace(tzinfo=timezone.utc)
+                if (agora - t).total_seconds() / 3600.0 < intervalo_h:
+                    pulados += 1
+                    continue
+            except Exception:
+                pass
+        link = p.get("permalink") or p.get("affiliate_url") or pid
+        r = amz.ler_produto(link)
+        lidos += 1
+        if r.get("error"):
+            if verbose:
+                print(f"  [amazon] {pid}: {r['error']}")
+            continue
+        novo = r.get("price")
+        if novo and (anterior is None or abs(novo - anterior) >= 0.01):
+            database.record_price(pid, novo, r.get("original_price"))
+        database.atualizar_dados(pid, {
+            "title": r.get("title") or None,
+            "thumbnail": r.get("thumbnail") or None,
+            "parcelas": r.get("parcelas") or "",
+            "frete": 1 if r.get("frete") else 0,
+            "pagamento": r.get("pagamento") or "",
+            "coupon_code": r.get("coupon_code") or "",
+            "coupon_note": r.get("coupon_note") or "",
+        })
+        if anterior and novo and novo < anterior:
+            queda = (anterior - novo) / anterior * 100
+            if queda >= config.QUEDA_URGENTE_PCT:
+                database.marcar_urgente(pid, queda)
+                quedas.append({"id": pid, "de": anterior, "para": novo,
+                               "queda": round(queda, 1)})
+        if verbose:
+            print(f"  [amazon] {pid}: R$ {novo}")
+
+    if verbose and (lidos or pulados):
+        print(f"[vigia] amazon: {lidos} lido(s) via Scrape.do, {pulados} pulado(s) "
+              f"(dentro de {intervalo_h:.0f}h)")
     return quedas
 
 

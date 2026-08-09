@@ -91,9 +91,11 @@ class Amazon(Loja):
     def _ler_scrapedo(self, alvo, asin, token):
         import urllib.parse
         import requests
+        # sem render: o preco vem no HTML do servidor da Amazon, entao nao precisa
+        # renderizar JS -> gasta menos tokens da Scrape.do.
         api = ("https://api.scrape.do/?token=" + token
                + "&url=" + urllib.parse.quote_plus(alvo)
-               + "&super=true&geoCode=br&render=true")
+               + "&super=true&geoCode=br")
         try:
             r = requests.get(api, timeout=90)
         except Exception as e:
@@ -143,7 +145,10 @@ class Amazon(Loja):
 
         por = None
         for s in ("#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+                  "#corePriceDisplay_desktop_feature_div .a-offscreen",
                   "#corePrice_feature_div .a-price .a-offscreen",
+                  "#corePrice_feature_div .a-offscreen",
+                  "#priceblock_ourprice", "#priceblock_dealprice",
                   ".a-price .a-offscreen"):
             el = soup.select_one(s)
             if el:
@@ -169,8 +174,33 @@ class Amazon(Loja):
 
         if not por:
             return {"error": "abriu, mas nao achei o preco", "amostra": txt[:160]}
+
+        # ---- infos extras (texto da pagina) ----
+        full = soup.get_text(" ", strip=True)
+        # parcelas: "6x de R$ 46,65"
+        mp = _re.search(r"(\d{1,2})\s*x\s*(?:de\s*)?R\$\s*([\d.,]+)", full)
+        parcelas = f"{mp.group(1)}x R$ {mp.group(2)}" if mp else None
+        # a vista / Pix
+        pagamento = None
+        if _re.search(r"\bno\s*pix\b", full, _re.I) or (
+                _re.search(r"[àa]\s*vista", full, _re.I) and _re.search(r"\bpix\b", full, _re.I)):
+            pagamento = "no PIX"
+        # frete gratis
+        frete = bool(_re.search(r"(entrega|frete)\s+gr[áa]tis", full, _re.I))
+        # cupom: codigo ("cupom ... : GAMES10") e/ou percentual
+        coupon_code = coupon_note = None
+        mcode = _re.search(r"cupom[^:\n]{0,40}?:\s*([A-Z0-9]{4,15})", full, _re.I)
+        if mcode:
+            coupon_code = mcode.group(1).upper()
+        mpct = _re.search(r"cupom[^%\n]{0,25}?(\d{1,3})\s*%", full, _re.I) or \
+               _re.search(r"(\d{1,3})\s*%[^%\n]{0,15}?cupom", full, _re.I)
+        if mpct:
+            coupon_note = f"{mpct.group(1)}% de desconto com cupom"
+
         return {"id": asin, "title": title, "price": por, "original_price": de,
-                "thumbnail": img, "permalink": alvo, "loja": "amazon"}
+                "thumbnail": img, "permalink": alvo, "loja": "amazon",
+                "parcelas": parcelas, "frete": frete, "pagamento": pagamento,
+                "coupon_code": coupon_code, "coupon_note": coupon_note}
 
     def _ler_navegador(self, alvo, asin):
         from bot import reader
