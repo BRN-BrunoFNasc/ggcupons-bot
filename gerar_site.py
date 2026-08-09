@@ -541,16 +541,71 @@ def _cta_telegram(base=""):
             f'</div></section>')
 
 
-def _rodape(base=""):
+FAQ = [
+    ("O Garimpo Gamer Cupons é gratuito?",
+     "Sim, 100% gratuito. Você não paga nada para ver as ofertas nem para usar o site."),
+    ("Como vocês ganham dinheiro?",
+     "Usamos links de afiliado. Quando você compra por um link nosso, a loja nos paga uma "
+     "pequena comissão — e o preço para você continua exatamente o mesmo."),
+    ("Os preços e descontos são confiáveis?",
+     "Coletamos os preços automaticamente e mostramos o histórico real de cada produto, "
+     "para você ver se o desconto é de verdade. Ainda assim, confira sempre o valor na "
+     "loja antes de finalizar a compra."),
+    ("De quais lojas são as ofertas?",
+     "No momento, Mercado Livre e Amazon. Estamos sempre avaliando novas lojas."),
+    ("Com que frequência os preços são atualizados?",
+     "Várias vezes ao dia, de forma automática."),
+    ("Como recebo as ofertas em primeira mão?",
+     "Siga nossos canais nas redes sociais — publicamos as melhores ofertas o dia todo."),
+]
+
+
+def _rodape(base="", full=False):
     logo = f'<img src="{base}logo.png" alt="">' if (SAIDA / "logo.png").exists() else ""
-    return f'''<footer><div class="foot-in">
-<a class="foot-marca" href="{base}index.html">{logo}<div><b>{e(config.BRAND_NAME)}</b>
-<small>{e(config.BRAND_SUB)}</small></div></a>
-<div class="foot-nav"><a href="{base}index.html">Ofertas</a><a href="{base}links.html">Redes</a></div>
-<p class="foot-aviso">As ofertas contêm links de afiliado — o preço para você é o mesmo.<br>
-Preços coletados automaticamente, sujeitos a alteração. Confira sempre na loja.</p>
-</div></footer>
+    ano = datetime.now(timezone.utc).year
+    faq = ""
+    if full:
+        itens = "".join(
+            f'<details><summary>{e(q)}</summary><p>{e(a)}</p></details>' for q, a in FAQ)
+        faq = (f'<section class="faq-wrap" id="faq"><h2 class="faq-h">Perguntas frequentes</h2>'
+               f'{itens}</section>')
+    return faq + f'''<footer>
+<div class="foot-cols">
+  <div class="foot-col foot-brand">
+    <a class="foot-marca" href="{base}index.html">{logo}<div><b>{e(config.BRAND_NAME)}</b>
+    <small>{e(config.BRAND_SUB)}</small></div></a>
+    <p class="foot-about">Comparamos preços de games e tech todos os dias e mostramos o
+    histórico real de cada produto — para você saber se o desconto é de verdade antes de comprar.</p>
+  </div>
+  <div class="foot-col"><h5>Navegação</h5>
+    <a href="{base}index.html">Ofertas</a>
+    <a href="{base}index.html#faq">Perguntas frequentes</a>
+    <a href="{base}links.html">Nossas redes</a>
+  </div>
+  <div class="foot-col"><h5>Lojas</h5>
+    <a href="{base}c/jogos.html">Jogos</a>
+    <a href="{base}c/consoles.html">Consoles</a>
+    <a href="{base}index.html">Ver todas</a>
+  </div>
+  <div class="foot-col"><h5>Contato</h5>
+    <a href="mailto:contato@ggcupons.com">contato@ggcupons.com</a>
+    <p>Sugestões de produtos e parcerias são bem-vindas.</p>
+  </div>
+</div>
+<div class="foot-bar">
+  <span>© {ano} {e(config.BRAND_NAME.title())}. Todos os direitos reservados.</span>
+  <span class="foot-aviso">Links de afiliado — o preço para você é o mesmo. Preços coletados
+  automaticamente e sujeitos a alteração; confira sempre na loja.</span>
+</div>
+</footer>
 <button id="topo" aria-label="Voltar ao topo"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+<div class="poll" id="poll"><button class="poll-x" id="poll-x" aria-label="Fechar">✕</button>
+<div class="poll-q">Qual loja você prefere comprar?</div><div class="poll-opts" id="poll-opts"></div></div>
+<div class="sugbg" id="sugbg"><div class="sugbox">
+<button class="sug-x" id="sug-x" aria-label="Fechar">✕</button><h3>Sugerir produto</h3>
+<p>A gente cadastra e passa a monitorar o histórico de preço pra você.</p>
+<input id="sug-nome" placeholder="Nome do produto *"><input id="sug-link" placeholder="Link do produto *">
+<div id="sug-erro"></div><button id="sug-enviar">Enviar sugestão</button></div></div>
 <script>(function(){{var b=document.getElementById('topo');if(!b)return;
 addEventListener('scroll',function(){{b.classList.toggle('on',scrollY>500);}},{{passive:true}});
 b.addEventListener('click',function(){{scrollTo({{top:0,behavior:'smooth'}});}});}})();</script>
@@ -783,7 +838,7 @@ def gerar():
 </main>
 {_cta_telegram("")}
 {prod_index(todos)}
-<script>{JS}</script>""" + _rodape(""))
+<script>{JS}</script>""" + _rodape("", full=True))
     (SAIDA / "index.html").write_text(home, encoding="utf-8")
 
     # ---------- paginas por categoria ----------

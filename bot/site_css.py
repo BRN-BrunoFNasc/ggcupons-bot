@@ -189,7 +189,12 @@ JS = """
     vis.forEach(k=>grid.appendChild(k));
     const c=document.getElementById('cont'); if(c)c.textContent=vis.length+' produto(s)';
     const nr=document.getElementById('nres'); if(nr)nr.textContent=vis.length;
-    const vz=document.getElementById('vazio'); if(vz)vz.style.display=vis.length?'none':'block';
+    const vz=document.getElementById('vazio');
+    if(vz){ if(vis.length){ vz.style.display='none'; }
+      else{ vz.style.display='block';
+        if(q){ vz.innerHTML='Nenhum resultado encontrado.<br><button class=\\"sug-btn\\">Sugerir esse produto — a gente cadastra e monitora o preço</button>';
+          const sb=vz.querySelector('.sug-btn'); if(sb)sb.onclick=function(){abrirSug(q);}; }
+        else{ vz.textContent='Nenhum produto com esses filtros.'; } } }
     facetas();
   }
 
@@ -232,7 +237,8 @@ JS = """
     const t=(v||'').toLowerCase().trim();
     if(t.length<2){ac.classList.remove('on');return}
     const m=window.PROD.filter(x=>x.t.toLowerCase().includes(t)).slice(0,6);
-    if(!m.length){ac.innerHTML='<div class=\\"none\\">Nada encontrado para \\"'+t+'\\"</div>';ac.classList.add('on');return}
+    if(!m.length){ac.innerHTML='<div class=\\"none\\">Nada encontrado para \\"'+t+'\\".<br><button class=\\"sug-btn sug-sm\\">Sugerir esse produto</button></div>';ac.classList.add('on');
+      const sb=ac.querySelector('.sug-btn'); if(sb)sb.onclick=function(){abrirSug(t);}; return}
     ac.innerHTML=m.map(x=>'<a href=\\"'+x.u+'\\"><img src=\\"'+x.img+'\\" alt=\\"\\" loading=\\"lazy\\">'
       +'<span class=\\"t\\">'+x.t+'</span><span class=\\"p\\">'+x.p+'</span></a>').join('');
     ac.classList.add('on');
@@ -277,6 +283,54 @@ JS = """
     const step=Math.max(1,Math.ceil(alvo/28));
     const t=setInterval(()=>{n+=step;if(n>=alvo){n=alvo;clearInterval(t)}el.textContent=n},26);
   });
+
+  // ===== Web3Forms: enquete + sugestao de produto =====
+  var W3F='04f8e848-dcb9-4c66-af97-4f78de1f5e63';
+  function w3f(payload,ok,fail){
+    fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify(Object.assign({access_key:W3F},payload))})
+      .then(function(r){return r.json();}).then(function(j){ j.success?ok():fail(j.message||'erro'); }).catch(function(e){fail(e.message);});
+  }
+  function abrirSug(nome){ var bg=document.getElementById('sugbg'); if(!bg)return;
+    var n=document.getElementById('sug-nome'),l=document.getElementById('sug-link'),er=document.getElementById('sug-erro');
+    if(n)n.value=nome||''; if(l)l.value=''; if(er)er.textContent=''; bg.classList.add('on');
+    var ac2=document.getElementById('ac'); if(ac2)ac2.classList.remove('on'); if(n)n.focus(); }
+  (function(){
+    var bg=document.getElementById('sugbg'); if(!bg)return;
+    var x=document.getElementById('sug-x'); if(x)x.onclick=function(){bg.classList.remove('on');};
+    bg.addEventListener('click',function(e){ if(e.target===bg)bg.classList.remove('on'); });
+    var env=document.getElementById('sug-enviar'); if(!env)return;
+    env.onclick=function(){
+      var nome=(document.getElementById('sug-nome').value||'').trim();
+      var link=(document.getElementById('sug-link').value||'').trim();
+      var er=document.getElementById('sug-erro');
+      if(!nome){er.textContent='Informe o nome do produto.';return;}
+      if(!link){er.textContent='Informe o link do produto.';return;}
+      env.disabled=true; env.textContent='Enviando...';
+      w3f({subject:'Sugestao de produto - GGCupons', from_name:'Sugestao GGCupons', produto:nome, link:link},
+        function(){ bg.querySelector('.sugbox').innerHTML='<h3>Recebido! 🎉</h3><p>Vamos cadastrar e monitorar o preço desse produto. Obrigado pela sugestão!</p><button id=\\"sug-ok\\">Fechar</button>';
+          var ok=document.getElementById('sug-ok'); if(ok)ok.onclick=function(){bg.classList.remove('on');}; },
+        function(m){ er.textContent='Erro ao enviar: '+m; env.disabled=false; env.textContent='Enviar sugestão'; });
+    };
+  })();
+  (function(){
+    var poll=document.getElementById('poll'); if(!poll)return;
+    try{ if(localStorage.getItem('gg_poll'))return; }catch(e){}
+    var opts=document.getElementById('poll-opts');
+    ['Mercado Livre','Amazon'].forEach(function(loja){
+      var b=document.createElement('button'); b.className='poll-op'; b.textContent=loja;
+      b.onclick=function(){
+        w3f({subject:'Enquete: loja preferida - GGCupons', from_name:'Enquete GGCupons', loja:loja},function(){},function(){});
+        try{ localStorage.setItem('gg_poll','1'); }catch(e){}
+        poll.innerHTML='<div class=\\"poll-q\\">Valeu pela resposta! 🎉</div>';
+        setTimeout(function(){poll.classList.remove('on');},1800);
+      };
+      opts.appendChild(b);
+    });
+    var px=document.getElementById('poll-x'); if(px)px.onclick=function(){ poll.classList.remove('on'); try{localStorage.setItem('gg_poll','1');}catch(e){} };
+    setTimeout(function(){ poll.classList.add('on'); },3500);
+  })();
+
   aplica();
 })();
 """

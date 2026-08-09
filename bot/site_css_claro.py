@@ -645,6 +645,59 @@ main{max-width:1660px}
  .card .txt{padding:8px 9px 11px}
 }
 
+/* ===== FAQ + rodape profissional ===== */
+.faq-wrap{max-width:820px;margin:64px auto 0;padding:0 22px}
+.faq-h{font-family:'Sora',sans-serif;font-weight:800;font-size:22px;text-align:center;margin-bottom:22px;color:var(--tx);letter-spacing:-.02em}
+.faq-wrap details{background:var(--pane);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .15s}
+.faq-wrap details[open]{border-color:var(--line2)}
+.faq-wrap summary{cursor:pointer;padding:15px 18px;font-weight:600;color:var(--tx);font-size:14.5px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.faq-wrap summary::-webkit-details-marker{display:none}
+.faq-wrap summary::after{content:"+";color:var(--ac);font-size:22px;font-weight:700;line-height:1}
+.faq-wrap details[open] summary::after{content:"\2212"}
+.faq-wrap details p{padding:0 18px 16px;color:var(--tx2);font-size:13.5px;line-height:1.65;margin:0}
+.foot-cols{max-width:1340px;margin:0 auto;padding:38px 22px 12px;display:grid;grid-template-columns:2.2fr 1fr 1fr 1.4fr;gap:30px}
+@media(max-width:760px){.foot-cols{grid-template-columns:1fr 1fr;gap:26px}}
+@media(max-width:440px){.foot-cols{grid-template-columns:1fr}}
+.foot-brand .foot-marca{margin-bottom:12px}
+.foot-about{color:rgba(255,255,255,.62);font-size:13px;line-height:1.6;max-width:320px}
+.foot-col h5{color:#fff;font-size:13px;margin-bottom:13px;font-family:'Sora',sans-serif;font-weight:700;letter-spacing:.02em}
+.foot-col a,.foot-col>p{display:block;color:rgba(255,255,255,.68);font-size:13px;margin-bottom:9px;line-height:1.5;text-decoration:none}
+.foot-col a:hover{color:var(--ac)}
+.foot-col>p{color:rgba(255,255,255,.5)}
+.foot-bar{border-top:1px solid rgba(255,255,255,.12);max-width:1340px;margin:14px auto 0;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:11.5px;color:rgba(255,255,255,.5)}
+.foot-bar .foot-aviso{max-width:560px;text-align:right;border:0;padding:0}
+@media(max-width:760px){.foot-bar{flex-direction:column;gap:8px}.foot-bar .foot-aviso{text-align:left}}
+
+/* ===== enquete (canto) ===== */
+.poll{position:fixed;left:20px;bottom:20px;z-index:70;width:272px;background:var(--pane);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;box-shadow:0 18px 50px rgba(0,0,0,.22);transform:translateY(24px);opacity:0;pointer-events:none;transition:.3s}
+.poll.on{transform:none;opacity:1;pointer-events:auto}
+.poll-x{position:absolute;top:8px;right:9px;background:none;border:0;color:var(--tx3);font-size:15px;cursor:pointer;line-height:1;padding:4px}
+.poll-x:hover{color:var(--tx)}
+.poll-q{font-weight:700;font-size:14px;color:var(--tx);margin-bottom:12px;padding-right:14px;font-family:'Sora',sans-serif}
+.poll-opts{display:flex;flex-direction:column;gap:8px}
+.poll-op{text-align:left;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);font-size:13.5px;font-weight:600;cursor:pointer;transition:.15s}
+.poll-op:hover{border-color:var(--ac);color:var(--ac);transform:translateX(2px)}
+@media(max-width:520px){.poll{left:12px;right:12px;width:auto;bottom:12px}}
+
+/* ===== sugerir produto (modal) ===== */
+.sugbg{position:fixed;inset:0;z-index:120;background:rgba(10,14,20,.62);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.2s}
+.sugbg.on{opacity:1;pointer-events:auto}
+.sugbox{position:relative;width:100%;max-width:420px;background:var(--pane);border:1px solid var(--line);border-radius:16px;padding:26px 24px 24px;box-shadow:0 30px 80px rgba(0,0,0,.4);transform:translateY(12px);transition:.2s}
+.sugbg.on .sugbox{transform:none}
+.sug-x{position:absolute;top:12px;right:14px;background:none;border:0;color:var(--tx3);font-size:17px;cursor:pointer;line-height:1;padding:4px}
+.sug-x:hover{color:var(--tx)}
+.sugbox h3{font-family:'Sora',sans-serif;font-weight:800;font-size:19px;color:var(--tx);margin-bottom:6px}
+.sugbox p{color:var(--tx2);font-size:13.5px;line-height:1.55;margin-bottom:16px}
+.sugbox input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx);font-size:14px;margin-bottom:10px;outline:none;box-sizing:border-box}
+.sugbox input:focus{border-color:var(--ac)}
+#sug-erro{color:#d93025;font-size:12.5px;min-height:16px;margin-bottom:6px}
+#sug-enviar,#sug-ok{width:100%;padding:12px;border:0;border-radius:10px;background:var(--ac);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:'Sora',sans-serif}
+#sug-enviar:hover,#sug-ok:hover{filter:brightness(1.05)}
+#sug-enviar:disabled{opacity:.6;cursor:default}
+.sug-btn{margin-top:12px;padding:10px 16px;border:1px solid var(--ac);border-radius:10px;background:transparent;color:var(--ac);font-weight:600;font-size:13px;cursor:pointer;transition:.15s}
+.sug-btn:hover{background:var(--ac);color:#fff}
+.sug-btn.sug-sm{margin-top:8px;padding:7px 12px;font-size:12px}
+
 """
 
 # grafico do historico no tema claro (fundo claro)
