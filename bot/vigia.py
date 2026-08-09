@@ -12,6 +12,32 @@ def _ultimo_preco(pid):
     return hist[-1]["price"] if hist else None
 
 
+# grava um "batimento" diario mesmo sem mudanca de preco, pra a linha do grafico
+# ficar continua (1 ponto por dia). Nao incha o banco: no maximo ~1 ponto/dia.
+_HEARTBEAT_H = 20
+
+
+def _horas_desde_ultimo(pid):
+    from datetime import datetime, timezone
+    hist = database.get_price_history(pid)
+    if not hist:
+        return 1e9
+    try:
+        t = datetime.fromisoformat(hist[-1]["recorded_at"])
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - t).total_seconds() / 3600.0
+    except Exception:
+        return 1e9
+
+
+def _deve_gravar(pid, novo, anterior):
+    """True se o preco mudou OU se ja faz ~1 dia desde o ultimo registro."""
+    if anterior is None or abs(novo - anterior) >= 0.01:
+        return True
+    return _horas_desde_ultimo(pid) >= _HEARTBEAT_H
+
+
 def varrer(cadastrar_novos=True, verbose=True):
     """Retorna a lista de quedas detectadas.
 
@@ -113,7 +139,7 @@ def _varrer_amazon(verbose=True):
                 print(f"  [amazon] {pid}: {r['error']}")
             continue
         novo = r.get("price")
-        if novo and (anterior is None or abs(novo - anterior) >= 0.01):
+        if novo and _deve_gravar(pid, novo, anterior):
             database.record_price(pid, novo, r.get("original_price"))
         database.atualizar_dados(pid, {
             "title": r.get("title") or None,
@@ -190,7 +216,7 @@ def _varrer_catalogo(cadastrar_novos=True, verbose=True):
             if verbose:
                 print(f"  NOVO  {pid}  {(i.get('titulo') or '')[:44]}")
         anterior = _ultimo_preco(pid)
-        if anterior is None or abs(novo - anterior) >= 0.01:
+        if _deve_gravar(pid, novo, anterior):
             database.record_price(pid, novo, i.get("de"))
         database.atualizar_dados(pid, {
             "parcelas": i.get("parcelas"),
