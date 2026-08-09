@@ -77,9 +77,103 @@ class Amazon(Loja):
     """
 
     def ler_produto(self, url_ou_id):
-        from bot import reader
+        """Le o produto. Se houver SCRAPER_TOKEN (Scrape.do), usa a API
+        (proxy residencial + geo BR, que fura o bloqueio da Amazon).
+        Senao, tenta o navegador local (bloqueia na nuvem)."""
+        import os
         asin = self.extrair_id(url_ou_id)
         alvo = self.url_produto(asin) if asin else str(url_ou_id)
+        token = os.environ.get("SCRAPER_TOKEN", "").strip()
+        if token:
+            return self._ler_scrapedo(alvo, asin, token)
+        return self._ler_navegador(alvo, asin)
+
+    def _ler_scrapedo(self, alvo, asin, token):
+        import urllib.parse
+        import requests
+        api = ("https://api.scrape.do/?token=" + token
+               + "&url=" + urllib.parse.quote_plus(alvo)
+               + "&super=true&geoCode=br&render=true")
+        try:
+            r = requests.get(api, timeout=90)
+        except Exception as e:
+            return {"error": f"erro na API scrape.do: {e}"}
+        if r.status_code != 200:
+            return {"error": f"scrape.do devolveu status {r.status_code}",
+                    "amostra": (r.text or "")[:160]}
+        return self._parse_html(r.text, alvo, asin)
+
+    @staticmethod
+    def _brl(s):
+        import re as _re
+        if not s:
+            return None
+        m = _re.sub(r"[^0-9,.]", "", str(s))
+        if not m:
+            return None
+        try:
+            return float(m.replace(".", "").replace(",", "."))
+        except Exception:
+            return None
+
+    def _parse_html(self, html, alvo, asin):
+        try:
+            from bs4 import BeautifulSoup
+        except Exception:
+            return {"error": "falta a dependencia beautifulsoup4"}
+        soup = BeautifulSoup(html or "", "html.parser")
+        txt = soup.get_text(" ", strip=True)[:600]
+        import re as _re
+        if _re.search(r"Digite os caracteres|Robot Check|not a robot|Insira os caracteres|"
+                      r"automated access|continuar comprando|Sorry, we just need", txt, _re.I):
+            return {"error": "bloqueado pela Amazon (CAPTCHA)", "amostra": txt[:160]}
+
+        def sel(*seletores):
+            for s in seletores:
+                el = soup.select_one(s)
+                if el:
+                    return el
+            return None
+
+        t = sel("#productTitle")
+        title = t.get_text(strip=True) if t else None
+        if not title:
+            og = soup.select_one('meta[property="og:title"]')
+            title = og.get("content", "").strip() if og else None
+
+        por = None
+        for s in ("#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+                  "#corePrice_feature_div .a-price .a-offscreen",
+                  ".a-price .a-offscreen"):
+            el = soup.select_one(s)
+            if el:
+                por = self._brl(el.get_text())
+                if por:
+                    break
+        de = None
+        for s in (".basisPrice .a-offscreen", 'span[data-a-strike="true"] .a-offscreen',
+                  ".a-text-price .a-offscreen"):
+            el = soup.select_one(s)
+            if el:
+                de = self._brl(el.get_text())
+                if de:
+                    break
+        img = None
+        im = sel("#landingImage", "#imgBlkFront")
+        if im and im.get("src"):
+            img = im.get("src")
+        if not img:
+            og = soup.select_one('meta[property="og:image"]')
+            if og and og.get("content"):
+                img = og.get("content")
+
+        if not por:
+            return {"error": "abriu, mas nao achei o preco", "amostra": txt[:160]}
+        return {"id": asin, "title": title, "price": por, "original_price": de,
+                "thumbnail": img, "permalink": alvo, "loja": "amazon"}
+
+    def _ler_navegador(self, alvo, asin):
+        from bot import reader
         try:
             with reader.browser(headless=True) as ctx:
                 page = ctx.pages[0] if ctx.pages else ctx.new_page()
@@ -93,22 +187,14 @@ class Amazon(Loja):
                 data = page.evaluate(self._JS)
         except Exception as e:
             return {"error": f"erro ao abrir a pagina: {e}"}
-
         if data.get("bloqueado"):
             return {"error": "bloqueado pela Amazon (CAPTCHA/robot check)",
                     "amostra": data.get("amostra")}
         if not data.get("por"):
-            return {"error": "abriu, mas nao achei o preco",
-                    "amostra": data.get("amostra")}
-        return {
-            "id": asin,
-            "title": data.get("title") or None,
-            "price": data.get("por"),
-            "original_price": data.get("de"),
-            "thumbnail": data.get("img") or None,
-            "permalink": alvo,
-            "loja": "amazon",
-        }
+            return {"error": "abriu, mas nao achei o preco", "amostra": data.get("amostra")}
+        return {"id": asin, "title": data.get("title") or None, "price": data.get("por"),
+                "original_price": data.get("de"), "thumbnail": data.get("img") or None,
+                "permalink": alvo, "loja": "amazon"}
 
     def urls_descoberta(self):
         return getattr(config, "AMZ_URLS", [])

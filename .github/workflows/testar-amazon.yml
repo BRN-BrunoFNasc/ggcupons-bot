@@ -34,4 +34,6 @@ jobs:
         run: cp ci.env .env
 
       - name: Testar leitura da Amazon
+        env:
+          SCRAPER_TOKEN: ${{ secrets.SCRAPER_TOKEN }}
         run: python testar_amazon.py "${{ github.event.inputs.url }}"
