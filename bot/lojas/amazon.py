@@ -43,9 +43,72 @@ class Amazon(Loja):
         sep = "&" if "?" in base else "?"
         return f"{base}{sep}tag={tag}"
 
-    # leitura e descoberta entram quando ativarmos a loja
+    # Leitor best-effort pela pagina do produto (navegador). A Amazon costuma
+    # bloquear IPs de datacenter (CAPTCHA), entao isso pode falhar na nuvem.
+    _JS = """
+    () => {
+      const parseBRL = (s) => {
+        if (!s) return null;
+        const m = String(s).replace(/[^0-9,\\.]/g, '');
+        const n = parseFloat(m.replace(/\\./g, '').replace(',', '.'));
+        return isNaN(n) ? null : n;
+      };
+      const q = (sel) => document.querySelector(sel);
+      const t = q('#productTitle');
+      const meta = (p) => { const e = document.querySelector('meta[property="'+p+'"]'); return e ? e.content : ''; };
+      const title = t ? t.textContent.trim() : (meta('og:title') || '');
+      let por = null;
+      const pe = q('#corePriceDisplay_desktop_feature_div .a-price .a-offscreen') ||
+                 q('#corePrice_feature_div .a-price .a-offscreen') ||
+                 q('.a-price .a-offscreen');
+      if (pe) por = parseBRL(pe.textContent);
+      let de = null;
+      const dee = q('.basisPrice .a-offscreen') ||
+                  q('span[data-a-strike="true"] .a-offscreen') ||
+                  q('.a-text-price .a-offscreen');
+      if (dee) de = parseBRL(dee.textContent);
+      const im = q('#landingImage') || q('#imgBlkFront');
+      const img = im ? (im.getAttribute('src') || '') : (meta('og:image') || '');
+      const body = (document.body ? document.body.innerText : '').slice(0, 600);
+      const bloqueado = /Digite os caracteres|Robot Check|not a robot|Insira os caracteres|automated access|Sorry, we just need/i.test(body)
+                        || !!document.querySelector('form[action*="validateCaptcha"]');
+      return { title, por, de, img, bloqueado, amostra: body.slice(0, 160) };
+    }
+    """
+
     def ler_produto(self, url_ou_id):
-        return {"error": "Amazon ainda nao configurada (falta AMZ_TAG e o leitor)"}
+        from bot import reader
+        asin = self.extrair_id(url_ou_id)
+        alvo = self.url_produto(asin) if asin else str(url_ou_id)
+        try:
+            with reader.browser(headless=True) as ctx:
+                page = ctx.pages[0] if ctx.pages else ctx.new_page()
+                page.goto(alvo, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(4000)
+                try:
+                    reader._aceitar_cookies(page)
+                except Exception:
+                    pass
+                page.wait_for_timeout(1500)
+                data = page.evaluate(self._JS)
+        except Exception as e:
+            return {"error": f"erro ao abrir a pagina: {e}"}
+
+        if data.get("bloqueado"):
+            return {"error": "bloqueado pela Amazon (CAPTCHA/robot check)",
+                    "amostra": data.get("amostra")}
+        if not data.get("por"):
+            return {"error": "abriu, mas nao achei o preco",
+                    "amostra": data.get("amostra")}
+        return {
+            "id": asin,
+            "title": data.get("title") or None,
+            "price": data.get("por"),
+            "original_price": data.get("de"),
+            "thumbnail": data.get("img") or None,
+            "permalink": alvo,
+            "loja": "amazon",
+        }
 
     def urls_descoberta(self):
         return getattr(config, "AMZ_URLS", [])
