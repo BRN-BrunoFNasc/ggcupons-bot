@@ -566,6 +566,73 @@ FAQ = [
 ]
 
 
+# Script independente (fora do JS principal): enquete + sugestao de produto.
+# Fica num <script> separado de proposito -> se o JS principal der algum erro,
+# o modal e a enquete continuam funcionando (abrir, fechar, enviar).
+_WIDGETS_JS = '''<script>
+(function(){
+  var W3F='04f8e848-dcb9-4c66-af97-4f78de1f5e63';
+  function w3f(payload,ok,fail){
+    fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(Object.assign({access_key:W3F},payload))})
+      .then(function(r){return r.json();}).then(function(j){j.success?ok():fail(j.message||'erro');}).catch(function(e){fail(e.message);});
+  }
+  window.abrirSug=function(nome){
+    var bg=document.getElementById('sugbg'); if(!bg)return;
+    var n=document.getElementById('sug-nome'),l=document.getElementById('sug-link'),er=document.getElementById('sug-erro');
+    var box=bg.querySelector('.sugbox');
+    if(box && !document.getElementById('sug-enviar')){ box.innerHTML=window._sugForm; ligarEnviar(); }
+    n=document.getElementById('sug-nome'); l=document.getElementById('sug-link'); er=document.getElementById('sug-erro');
+    if(n)n.value=nome||''; if(l)l.value=''; if(er)er.textContent='';
+    bg.classList.add('on');
+    var ac=document.getElementById('ac'); if(ac)ac.classList.remove('on');
+    if(n)n.focus();
+  };
+  function fechar(){ var bg=document.getElementById('sugbg'); if(bg)bg.classList.remove('on'); }
+  function ligarEnviar(){
+    var env=document.getElementById('sug-enviar'); if(!env)return;
+    env.onclick=function(){
+      var nome=(document.getElementById('sug-nome').value||'').trim();
+      var link=(document.getElementById('sug-link').value||'').trim();
+      var er=document.getElementById('sug-erro');
+      if(!nome){er.textContent='Informe o nome do produto.';return;}
+      if(!link){er.textContent='Informe o link do produto.';return;}
+      env.disabled=true; env.textContent='Enviando...';
+      w3f({subject:'Sugestao de produto - GGCupons',from_name:'Sugestao GGCupons',produto:nome,link:link},
+        function(){ var bg=document.getElementById('sugbg'); bg.querySelector('.sugbox').innerHTML='<h3>Recebido!</h3><p>Vamos cadastrar e monitorar o preco desse produto. Obrigado pela sugestao!</p><button id="sug-ok">Fechar</button>'; var ok=document.getElementById('sug-ok'); if(ok)ok.onclick=fechar; },
+        function(m){ er.textContent='Erro ao enviar: '+m; env.disabled=false; env.textContent='Enviar sugestao'; });
+    };
+  }
+  var bg=document.getElementById('sugbg');
+  if(bg){
+    var box=bg.querySelector('.sugbox'); if(box)window._sugForm=box.innerHTML;
+    var x=document.getElementById('sug-x'); if(x)x.onclick=fechar;
+    bg.addEventListener('click',function(e){ if(e.target===bg)fechar(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape')fechar(); });
+    ligarEnviar();
+  }
+  var poll=document.getElementById('poll');
+  if(poll){
+    var skip=false; try{skip=!!localStorage.getItem('gg_poll');}catch(e){}
+    if(!skip){
+      var opts=document.getElementById('poll-opts');
+      ['Mercado Livre','Amazon'].forEach(function(loja){
+        var b=document.createElement('button'); b.className='poll-op'; b.textContent=loja;
+        b.onclick=function(){
+          w3f({subject:'Enquete: loja preferida - GGCupons',from_name:'Enquete GGCupons',loja:loja},function(){},function(){});
+          try{localStorage.setItem('gg_poll','1');}catch(e){}
+          poll.innerHTML='<div class="poll-q">Valeu pela resposta!</div>';
+          setTimeout(function(){poll.classList.remove('on');},1800);
+        };
+        opts.appendChild(b);
+      });
+      var px=document.getElementById('poll-x'); if(px)px.onclick=function(){ poll.classList.remove('on'); try{localStorage.setItem('gg_poll','1');}catch(e){} };
+      setTimeout(function(){ poll.classList.add('on'); },3500);
+    }
+  }
+})();
+</script>'''
+
+
 def _rodape(base="", full=False):
     logo = f'<img src="{base}logo.png" alt="">' if (SAIDA / "logo.png").exists() else ""
     ano = datetime.now(timezone.utc).year
@@ -615,6 +682,7 @@ def _rodape(base="", full=False):
 <script>(function(){{var b=document.getElementById('topo');if(!b)return;
 addEventListener('scroll',function(){{b.classList.toggle('on',scrollY>500);}},{{passive:true}});
 b.addEventListener('click',function(){{scrollTo({{top:0,behavior:'smooth'}});}});}})();</script>
+''' + _WIDGETS_JS + '''
 </body></html>'''
 
 

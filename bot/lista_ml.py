@@ -84,12 +84,46 @@ JS_LISTA = """
 """
 
 
-def _rolar(page, vezes=6):
-    """Rola a pagina para carregar os cards preguicosos (lazy-load)."""
-    for _ in range(vezes):
+def _contar_cards(page):
+    try:
+        return page.evaluate("document.querySelectorAll('a[href*=\"MLB\"]').length")
+    except Exception:
+        return 0
+
+
+def _esperar_precos(page, timeout=18000):
+    """Espera os precos renderizarem antes de ler (evita ler a pagina 'crua')."""
+    try:
+        page.wait_for_selector(".andes-money-amount__fraction", timeout=timeout)
+    except Exception:
+        pass
+
+
+def _rolar(page, verbose=False):
+    """Rola ate o numero de cards parar de crescer (lazy-load) — em vez de um numero
+    fixo de rolagens. Assim carrega TODOS os produtos, mesmo em conexao/CI lenta.
+    Tem um teto de seguranca pra nunca ficar preso."""
+    _esperar_precos(page)
+    anterior, estavel = -1, 0
+    for _ in range(60):  # teto de seguranca
+        atual = _contar_cards(page)
+        if atual <= anterior:
+            estavel += 1
+            if estavel >= 3:      # 3 rolagens seguidas sem nada novo -> fim da pagina
+                break
+        else:
+            estavel = 0
+        anterior = atual
         page.mouse.wheel(0, 1600)
-        page.wait_for_timeout(1100)
-    page.wait_for_timeout(1000)
+        page.wait_for_timeout(950)
+    # volta ao topo e espera assentar (garante que tudo renderizou)
+    try:
+        page.mouse.wheel(0, -60000)
+    except Exception:
+        pass
+    page.wait_for_timeout(900)
+    if verbose:
+        print(f"[lista] rolagem: {_contar_cards(page)} cards carregados")
 
 
 def _proxima_pagina(page):
@@ -125,11 +159,11 @@ def ler(url_lista, headless=True, verbose=True, max_paginas=12):
     with reader.browser(headless=headless) as ctx:
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         page.goto(url_lista, wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(5000)
         reader._aceitar_cookies(page)
+        _esperar_precos(page)
 
         for npag in range(1, max_paginas + 1):
-            _rolar(page)
+            _rolar(page, verbose=verbose)
 
             if reader.bloqueado(page):
                 if verbose:

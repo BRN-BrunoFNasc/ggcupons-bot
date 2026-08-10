@@ -284,53 +284,6 @@ JS = """
     const t=setInterval(()=>{n+=step;if(n>=alvo){n=alvo;clearInterval(t)}el.textContent=n},26);
   });
 
-  // ===== Web3Forms: enquete + sugestao de produto =====
-  var W3F='04f8e848-dcb9-4c66-af97-4f78de1f5e63';
-  function w3f(payload,ok,fail){
-    fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify(Object.assign({access_key:W3F},payload))})
-      .then(function(r){return r.json();}).then(function(j){ j.success?ok():fail(j.message||'erro'); }).catch(function(e){fail(e.message);});
-  }
-  function abrirSug(nome){ var bg=document.getElementById('sugbg'); if(!bg)return;
-    var n=document.getElementById('sug-nome'),l=document.getElementById('sug-link'),er=document.getElementById('sug-erro');
-    if(n)n.value=nome||''; if(l)l.value=''; if(er)er.textContent=''; bg.classList.add('on');
-    var ac2=document.getElementById('ac'); if(ac2)ac2.classList.remove('on'); if(n)n.focus(); }
-  (function(){
-    var bg=document.getElementById('sugbg'); if(!bg)return;
-    var x=document.getElementById('sug-x'); if(x)x.onclick=function(){bg.classList.remove('on');};
-    bg.addEventListener('click',function(e){ if(e.target===bg)bg.classList.remove('on'); });
-    var env=document.getElementById('sug-enviar'); if(!env)return;
-    env.onclick=function(){
-      var nome=(document.getElementById('sug-nome').value||'').trim();
-      var link=(document.getElementById('sug-link').value||'').trim();
-      var er=document.getElementById('sug-erro');
-      if(!nome){er.textContent='Informe o nome do produto.';return;}
-      if(!link){er.textContent='Informe o link do produto.';return;}
-      env.disabled=true; env.textContent='Enviando...';
-      w3f({subject:'Sugestao de produto - GGCupons', from_name:'Sugestao GGCupons', produto:nome, link:link},
-        function(){ bg.querySelector('.sugbox').innerHTML='<h3>Recebido! 🎉</h3><p>Vamos cadastrar e monitorar o preço desse produto. Obrigado pela sugestão!</p><button id=\\"sug-ok\\">Fechar</button>';
-          var ok=document.getElementById('sug-ok'); if(ok)ok.onclick=function(){bg.classList.remove('on');}; },
-        function(m){ er.textContent='Erro ao enviar: '+m; env.disabled=false; env.textContent='Enviar sugestão'; });
-    };
-  })();
-  (function(){
-    var poll=document.getElementById('poll'); if(!poll)return;
-    try{ if(localStorage.getItem('gg_poll'))return; }catch(e){}
-    var opts=document.getElementById('poll-opts');
-    ['Mercado Livre','Amazon'].forEach(function(loja){
-      var b=document.createElement('button'); b.className='poll-op'; b.textContent=loja;
-      b.onclick=function(){
-        w3f({subject:'Enquete: loja preferida - GGCupons', from_name:'Enquete GGCupons', loja:loja},function(){},function(){});
-        try{ localStorage.setItem('gg_poll','1'); }catch(e){}
-        poll.innerHTML='<div class=\\"poll-q\\">Valeu pela resposta! 🎉</div>';
-        setTimeout(function(){poll.classList.remove('on');},1800);
-      };
-      opts.appendChild(b);
-    });
-    var px=document.getElementById('poll-x'); if(px)px.onclick=function(){ poll.classList.remove('on'); try{localStorage.setItem('gg_poll','1');}catch(e){} };
-    setTimeout(function(){ poll.classList.add('on'); },3500);
-  })();
-
   aplica();
 })();
 """
