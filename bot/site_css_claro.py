@@ -127,8 +127,6 @@ main{max-width:1340px;margin:0 auto;padding:0 22px 70px}
 .fatos div{color:var(--tx3);font-size:12.5px}
 .fatos b{display:block;color:var(--tx);font-size:17px;font-weight:700;margin-top:3px}
 
-footer{border-top:1px solid var(--line);margin-top:56px;padding:28px 22px;text-align:center;
- color:var(--tx3);font-size:12.5px;line-height:1.9;background:var(--pane)}
 @media(max-width:760px){.prod{grid-template-columns:1fr}.top nav{display:none}}
 
 /* ===== layout com sidebar ===== */
@@ -349,21 +347,37 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .termo.t-cinza::before{animation:pisca 1.1s ease-in-out infinite}
 @keyframes pisca{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
 
-/* rodape ancorado nos cantos */
-footer{border-top:1px solid var(--line);margin-top:56px;background:var(--barra);color:rgba(255,255,255,.7)}
-.foot-in{max-width:1340px;margin:0 auto;padding:30px 22px;display:flex;align-items:center;
- gap:24px;flex-wrap:wrap}
-.foot-marca{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff}
-.foot-marca img{width:44px;height:44px;border-radius:50%;box-shadow:0 0 0 2px var(--ac);
- background:var(--barra);object-fit:cover}
-.foot-marca b{font-size:15px;display:block}
-.foot-marca small{color:var(--ac);font-size:10px;letter-spacing:.13em;font-weight:700}
-.foot-nav{display:flex;gap:18px}
-.foot-nav a{color:rgba(255,255,255,.78);font-size:14px}
-.foot-nav a:hover{color:#fff}
-.foot-aviso{margin-left:auto;text-align:right;font-size:12px;color:rgba(255,255,255,.5);line-height:1.7;max-width:420px}
-@media(max-width:760px){.foot-in{flex-direction:column;align-items:flex-start}
- .foot-aviso{margin-left:0;text-align:left}}
+/* ===== rodape ===== */
+.gg-footer{margin-top:72px;background:var(--barra);color:rgba(255,255,255,.62);text-align:left}
+.gg-foot-top{max-width:1160px;margin:0 auto;padding:54px 24px 36px;display:grid;
+ grid-template-columns:1.35fr 2fr;gap:48px}
+.gg-foot-brand{max-width:380px}
+.gg-foot-logo{display:inline-flex;align-items:center;gap:12px;text-decoration:none;margin-bottom:18px}
+.gg-foot-logo img{width:46px;height:46px;border-radius:50%;box-shadow:0 0 0 2px var(--ac);object-fit:cover;flex:none}
+.gg-foot-logo b{display:block;color:#fff;font-family:'Sora',sans-serif;font-weight:800;
+ font-size:16px;line-height:1.2;letter-spacing:-.01em}
+.gg-foot-logo small{display:block;color:var(--ac);font-size:10px;font-weight:700;letter-spacing:.14em;margin-top:3px}
+.gg-foot-brand p{margin:0;font-size:13.5px;line-height:1.65;color:rgba(255,255,255,.5)}
+.gg-foot-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
+.gg-foot-col h5{margin:0 0 15px;color:#fff;font-family:'Sora',sans-serif;font-weight:700;font-size:13px;letter-spacing:.02em}
+.gg-foot-col a,.gg-foot-col p{display:block;margin:0 0 11px;color:rgba(255,255,255,.6);font-size:13.5px;line-height:1.45;text-decoration:none}
+.gg-foot-col a{transition:color .15s}
+.gg-foot-col a:hover{color:var(--ac)}
+.gg-foot-col p{color:rgba(255,255,255,.38);font-size:12.5px}
+.gg-foot-bottom{border-top:1px solid rgba(255,255,255,.1)}
+.gg-foot-bottom-in{max-width:1160px;margin:0 auto;padding:18px 24px;display:flex;
+ justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.gg-foot-bottom-in span{font-size:11.5px;color:rgba(255,255,255,.4);line-height:1.55}
+.gg-foot-bottom-in span:last-child{max-width:640px;text-align:right}
+@media(max-width:860px){
+ .gg-foot-top{grid-template-columns:1fr;gap:38px;padding:44px 22px 30px}
+ .gg-foot-brand{max-width:none}
+}
+@media(max-width:520px){
+ .gg-foot-cols{grid-template-columns:1fr 1fr;gap:26px 18px}
+ .gg-foot-bottom-in{flex-direction:column;align-items:flex-start;gap:8px}
+ .gg-foot-bottom-in span:last-child{text-align:left;max-width:none}
+}
 
 /* ==== PRODUTO ==== */
 .voltar{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line2);
@@ -655,19 +669,6 @@ main{max-width:1660px}
 .faq-wrap summary::after{content:"+";color:var(--ac);font-size:22px;font-weight:700;line-height:1}
 .faq-wrap details[open] summary::after{content:"\2212"}
 .faq-wrap details p{padding:0 18px 16px;color:var(--tx2);font-size:13.5px;line-height:1.65;margin:0}
-.foot-cols{max-width:1340px;margin:0 auto;padding:38px 22px 12px;display:grid;grid-template-columns:2.2fr 1fr 1fr 1.4fr;gap:30px}
-@media(max-width:760px){.foot-cols{grid-template-columns:1fr 1fr;gap:26px}}
-@media(max-width:440px){.foot-cols{grid-template-columns:1fr}}
-.foot-brand .foot-marca{margin-bottom:12px}
-.foot-about{color:rgba(255,255,255,.62);font-size:13px;line-height:1.6;max-width:320px}
-.foot-col h5{color:#fff;font-size:13px;margin-bottom:13px;font-family:'Sora',sans-serif;font-weight:700;letter-spacing:.02em}
-.foot-col a,.foot-col>p{display:block;color:rgba(255,255,255,.68);font-size:13px;margin-bottom:9px;line-height:1.5;text-decoration:none}
-.foot-col a:hover{color:var(--ac)}
-.foot-col>p{color:rgba(255,255,255,.5)}
-.foot-bar{border-top:1px solid rgba(255,255,255,.12);max-width:1340px;margin:14px auto 0;padding:16px 22px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:11.5px;color:rgba(255,255,255,.5)}
-.foot-bar .foot-aviso{max-width:560px;text-align:right;border:0;padding:0}
-@media(max-width:760px){.foot-bar{flex-direction:column;gap:8px}.foot-bar .foot-aviso{text-align:left}}
-
 /* ===== enquete (canto) ===== */
 .poll{position:fixed;left:20px;bottom:20px;z-index:70;width:272px;background:var(--pane);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;box-shadow:0 18px 50px rgba(0,0,0,.22);transform:translateY(24px);opacity:0;pointer-events:none;transition:.3s}
 .poll.on{transform:none;opacity:1;pointer-events:auto}

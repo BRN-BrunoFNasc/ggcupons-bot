@@ -162,6 +162,75 @@ def gerar_categoria(caminho, categoria, brand="GARIMPO GAMER CUPONS"):
     _salvar(img, caminho)
 
 
+def _brl(v):
+    intp, dec = ("%0.2f" % float(v)).split(".")
+    intp = "{:,}".format(int(intp)).replace(",", ".")   # milhar com ponto
+    return "R$ " + intp + "," + dec
+
+
+def _baixar(url):
+    """Baixa a imagem do produto (ou devolve None em caso de erro)."""
+    if not url:
+        return None
+    try:
+        import io
+        import requests
+        r = requests.get(url, timeout=14, headers={"User-Agent": "Mozilla/5.0"})
+        return Image.open(io.BytesIO(r.content)).convert("RGBA")
+    except Exception:
+        return None
+
+
+def gerar_produto(caminho, titulo, preco, preco_de=None, desc=0, loja="",
+                  img_url="", brand="GARIMPO GAMER CUPONS"):
+    """Banner de compartilhamento do produto: foto num card branco (esquerda) +
+    titulo e preco (direita), no estilo da marca. Devolve True se conseguiu."""
+    img, d = _fundo()
+    # card branco com a foto do produto (esquerda)
+    cx0, cy0, cx1, cy1 = 54, 92, 524, 532
+    d.rounded_rectangle([cx0, cy0, cx1, cy1], radius=26, fill=(255, 255, 255, 255))
+    prod = _baixar(img_url)
+    if prod is not None:
+        bw, bh = (cx1 - cx0 - 54), (cy1 - cy0 - 54)
+        rr = min(bw / prod.width, bh / prod.height)
+        pw, ph = max(1, int(prod.width * rr)), max(1, int(prod.height * rr))
+        prod = prod.resize((pw, ph))
+        px = cx0 + ((cx1 - cx0) - pw) // 2
+        py = cy0 + ((cy1 - cy0) - ph) // 2
+        img.paste(prod, (px, py), prod)
+
+    rx = 580
+    lojanome = {"mercadolivre": "Mercado Livre", "amazon": "Amazon"}.get(
+        (loja or "").lower(), (loja or "Oferta"))
+    _pill(d, rx, 74, lojanome.upper(), _font(22, "bold"), _hex(BG_BOT), _hex(MENTA))
+
+    ft = _font(40, "bold")
+    y = 142
+    for ln in _wrap(d, titulo or "", ft, 560)[:3]:
+        d.text((rx, y), ln, font=ft, fill=_hex(BRANCO))
+        y += 52
+
+    py0 = max(y + 30, 336)
+    if preco_de and float(preco_de) > float(preco):
+        fde = _font(30, "med")
+        de = _brl(preco_de)
+        d.text((rx, py0), de, font=fde, fill=_hex(CINZA))
+        b = d.textbbox((0, 0), de, font=fde)
+        ym = py0 + (b[3] - b[1]) // 2 + 4
+        d.line([rx, ym, rx + (b[2] - b[0]), ym], fill=_hex(CINZA), width=3)
+        py0 += 46
+    fpor = _font(66, "bold")
+    d.text((rx, py0), _brl(preco), font=fpor, fill=_hex(MENTA))
+    wpor = d.textlength(_brl(preco), font=fpor)
+    if desc:
+        _pill(d, int(rx + wpor + 22), py0 + 16, "-%d%%" % int(desc),
+              _font(28, "bold"), _hex(BRANCO), _hex(LARANJA))
+
+    _marca(d, brand)
+    _salvar(img, caminho)
+    return True
+
+
 def gerar_todos(pasta, categorias, slug, brand="GARIMPO GAMER CUPONS"):
     """Gera home.png + cat-<slug>.png pra cada categoria. `slug` e a funcao cat_slug."""
     gerar_home(os.path.join(pasta, "home.png"), brand=brand)

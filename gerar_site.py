@@ -642,34 +642,35 @@ def _rodape(base="", full=False):
             f'<details><summary>{e(q)}</summary><p>{e(a)}</p></details>' for q, a in FAQ)
         faq = (f'<section class="faq-wrap" id="faq"><h2 class="faq-h">Perguntas frequentes</h2>'
                f'{itens}</section>')
-    return faq + f'''<footer>
-<div class="foot-cols">
-  <div class="foot-col foot-brand">
-    <a class="foot-marca" href="{base}index.html">{logo}<div><b>{e(config.BRAND_NAME)}</b>
-    <small>{e(config.BRAND_SUB)}</small></div></a>
-    <p class="foot-about">Comparamos preços de games e tech todos os dias e mostramos o
-    histórico real de cada produto — para você saber se o desconto é de verdade antes de comprar.</p>
+    return faq + f'''<footer class="gg-footer">
+<div class="gg-foot-top">
+  <div class="gg-foot-brand">
+    <a class="gg-foot-logo" href="{base}index.html">{logo}<span><b>{e(config.BRAND_NAME)}</b><small>{e(config.BRAND_SUB)}</small></span></a>
+    <p>Comparamos preços de games e tech todos os dias e mostramos o histórico real de cada
+    produto — para você saber se o desconto é de verdade antes de comprar.</p>
   </div>
-  <div class="foot-col"><h5>Navegação</h5>
-    <a href="{base}index.html">Ofertas</a>
-    <a href="{base}index.html#faq">Perguntas frequentes</a>
-    <a href="{base}links.html">Nossas redes</a>
-  </div>
-  <div class="foot-col"><h5>Lojas</h5>
-    <a href="{base}c/jogos.html">Jogos</a>
-    <a href="{base}c/consoles.html">Consoles</a>
-    <a href="{base}index.html">Ver todas</a>
-  </div>
-  <div class="foot-col"><h5>Contato</h5>
-    <a href="mailto:contato@ggcupons.com">contato@ggcupons.com</a>
-    <p>Sugestões de produtos e parcerias são bem-vindas.</p>
+  <div class="gg-foot-cols">
+    <div class="gg-foot-col"><h5>Navegação</h5>
+      <a href="{base}index.html">Ofertas</a>
+      <a href="{base}index.html#faq">Perguntas frequentes</a>
+      <a href="{base}links.html">Nossas redes</a>
+    </div>
+    <div class="gg-foot-col"><h5>Lojas</h5>
+      <a href="{base}c/jogos.html">Jogos</a>
+      <a href="{base}c/consoles.html">Consoles</a>
+      <a href="{base}index.html">Ver todas</a>
+    </div>
+    <div class="gg-foot-col"><h5>Contato</h5>
+      <a href="mailto:contato@ggcupons.com">contato@ggcupons.com</a>
+      <p>Sugestões de produtos e parcerias são bem-vindas.</p>
+    </div>
   </div>
 </div>
-<div class="foot-bar">
+<div class="gg-foot-bottom"><div class="gg-foot-bottom-in">
   <span>© {ano} {e(config.BRAND_NAME.title())}. Todos os direitos reservados.</span>
-  <span class="foot-aviso">Links de afiliado — o preço para você é o mesmo. Preços coletados
-  automaticamente e sujeitos a alteração; confira sempre na loja.</span>
-</div>
+  <span>Links de afiliado — o preço para você é o mesmo. Preços coletados automaticamente
+  e sujeitos a alteração; confira sempre na loja.</span>
+</div></div>
 </footer>
 <button id="topo" aria-label="Voltar ao topo"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
 <div class="poll" id="poll"><button class="poll-x" id="poll-x" aria-label="Fechar">✕</button>
@@ -820,11 +821,23 @@ def gerar():
                                     "name": LOJAS.get(p.get("loja"), ("Loja",))[0]}}}
         ldjson = ('<script type="application/ld+json">'
                   + json.dumps(ld, ensure_ascii=False) + '</script>')
+        # banner de compartilhamento do produto (foto + preco no estilo da marca)
+        og_prod, og_wide = (p.get("thumbnail") or ""), False
+        try:
+            from bot import og as _og
+            _ogp = SAIDA / "og" / f"p-{p['id']}.png"
+            _ogp.parent.mkdir(parents=True, exist_ok=True)
+            _og.gerar_produto(str(_ogp), p.get("title") or "", d["por"], d.get("de"),
+                              d.get("desc") or 0, p.get("loja") or "",
+                              p.get("thumbnail") or "", brand=config.BRAND_NAME)
+            og_prod, og_wide = f"{config.SITE_URL}/og/p-{p['id']}.png", True
+        except Exception as _e:
+            print(f"[og] produto {p['id']}: fallback ({_e})")
         pag = (cabecalho(f"{p.get('title')} por {brl(d['por'])} — {config.BRAND_NAME}",
                          f"Histórico de preço de {p.get('title')}. Saiba se {brl(d['por'])} "
                          f"é um bom preço antes de comprar.", base="../",
                          canonical=f"p/{p['id']}.html",
-                         og_image=(p.get("thumbnail") or ""), og_dims=False)
+                         og_image=og_prod, og_dims=og_wide)
                + corpo + ldjson + _cta_telegram("../") + _rodape("../"))
         (SAIDA / "p" / f"{p['id']}.html").write_text(pag, encoding="utf-8")
 
