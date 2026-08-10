@@ -357,7 +357,7 @@ def _insights(d):
 
 
 def _hist_box(d):
-    hist = [{"d": h["recorded_at"][:16], "p": round(h["price"], 2)} for h in d["hist"]]
+    hist = [{"d": h["recorded_at"], "p": round(h["price"], 2)} for h in d["hist"]]
     corg = GRAF[0] or _cor(config.COR_LINHA)
     cormin = GRAF[1] or _cor(config.COR_PRECO)
     _loja = (d.get("p") or {}).get("loja") or ""
@@ -407,19 +407,18 @@ document.querySelectorAll('.card').forEach(function(c){c.classList.add('in');});
   var cv=document.getElementById('grafico'); if(!cv) return;
   var brl=function(v){return 'R$ '+Number(v).toFixed(2).replace('.',',');};
   var z=function(n){return (n<10?'0':'')+n;};
-  var dt=function(s){return new Date(s.length<=10?s+'T00:00':s);};
+  var dt=function(s){
+    if(s==null) return new Date(NaN);
+    s=String(s);
+    if(s.length<=10) return new Date(s+'T00:00');            // data pura -> meia-noite local
+    if(!/[zZ]|[+-]\d\d:?\d\d$/.test(s)) s+='Z';               // sem fuso -> grava em UTC
+    return new Date(s);                                        // getHours() ja devolve hora LOCAL
+  };
   var chart, dias=30;
-  function horas24(){ // serie de hora em hora (ultimas 24h) com carry-forward do ultimo preco
-    var now=Date.now(), ini=now-24*36e5, out=[];
-    for(var h=0;h<=24;h++){ var t=ini+h*36e5, last=null;
-      for(var k=0;k<H.length;k++){ if(dt(H[k].d).getTime()<=t) last=H[k].p; else break; }
-      if(last!==null) out.push({d:new Date(t).toISOString().slice(0,16),p:last}); }
-    return out.length>=2?out:H.slice(-2);
-  }
-  function fatia(){
-    if(dias===1) return horas24();
+  function fatia(){ // pontos REAIS na janela; 24h mostra o horario real de cada leitura
     if(!dias) return H;
-    var corte=Date.now()-dias*864e5;
+    var jan=(dias===1)?24*36e5:dias*864e5;
+    var corte=Date.now()-jan;
     var f=H.filter(function(x){return dt(x.d).getTime()>=corte;});
     return f.length>=2?f:H.slice(-2);
   }
